@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2b2f34">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hm Book">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Hm Book</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Customer installment, payment and profit manager">
+<style>
+html,body{overscroll-behavior-y:none;-webkit-overflow-scrolling:touch}
+body{overscroll-behavior-y:none}
+/* Concept: a private banker's ledger. Soft charcoal rail and hero, gold used only for marks of value (amounts, monogram, rules). Left rail + content on desktop, tab bar on phones. Contacts = list + detail pane. */
+:root{
+  --font-display:'Manrope','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',sans-serif;
+  --font-body:'Manrope','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',sans-serif;
+  --bg:#e8e9eb; --surface:#ffffff; --surface2:#f1f2f3; --ink:#202427; --muted:#60676d; --line:#d8dbde;
+  --brand:#33383d; --on-brand:#f6f7f8; --brand-soft:#e4e6e8; --brand-ink:#2c3135;
+  --gold:#b08a38; --gold-ink:#7a5c15; --gold-soft:#f5edd7;
+  --good:#18794c; --good-soft:#d9f0e3; --warn:#9c5a0e; --warn-soft:#fbebd3; --bad:#c43a3a; --bad-soft:#f8e0e0;
+  --hero-a:#2b2f34; --hero-b:#4a5057; --hero-ink:#f2f3f4; --hero-muted:#b6bcc2; --hero-gold:#e3c570;
+  --rail:#2b2f34; --rail-ink:#e6e8ea; --rail-muted:#9ca3aa;
+  --av-bg-l:88%; --av-fg-l:26%;
+  --shadow:0 1px 2px rgba(20,24,28,.07),0 14px 34px rgba(20,24,28,.10);
+  --radius:16px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#1d2024; --surface:#272b30; --surface2:#2f343a; --ink:#eceef0; --muted:#9ba3aa; --line:#3b4147;
+    --brand:#d6dade; --on-brand:#1d2024; --brand-soft:#363c42; --brand-ink:#e2e5e8;
+    --gold:#d2ae5c; --gold-ink:#dcbc70; --gold-soft:#2f2a1a;
+    --good:#5fcf9a; --good-soft:#1d3a2d; --warn:#e2a255; --warn-soft:#3a2c14; --bad:#f28b8b; --bad-soft:#412424;
+    --rail:#23272b; --av-bg-l:26%; --av-fg-l:82%;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 14px 34px rgba(0,0,0,.3);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1d2024; --surface:#272b30; --surface2:#2f343a; --ink:#eceef0; --muted:#9ba3aa; --line:#3b4147;
+  --brand:#d6dade; --on-brand:#1d2024; --brand-soft:#363c42; --brand-ink:#e2e5e8;
+  --gold:#d2ae5c; --gold-ink:#dcbc70; --gold-soft:#2f2a1a;
+  --good:#5fcf9a; --good-soft:#1d3a2d; --warn:#e2a255; --warn-soft:#3a2c14; --bad:#f28b8b; --bad-soft:#412424;
+  --rail:#23272b; --av-bg-l:26%; --av-fg-l:82%;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 14px 34px rgba(0,0,0,.3);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.45 var(--font-body);font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent}
+img{max-width:100%}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+h1,h2,h3,p,dl,dd{margin:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- shell ---------- */
+.shell{
+  min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr);
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:12px 96px;
+}
+.main{min-width:0;max-width:1080px;width:100%;margin-inline:auto}
+.rail{display:none}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 0 14px}
+.brandlock{display:flex;align-items:center;gap:11px;min-width:0}
+.mark{width:40px;height:40px;border-radius:11px;flex:none;display:grid;place-items:center;background:linear-gradient(145deg,var(--hero-a),var(--hero-b));color:var(--hero-gold);font:800 17px/1 var(--font-display);letter-spacing:.5px;box-shadow:inset 0 0 0 1px rgba(227,197,112,.45)}
+.brandname{font:800 20px/1.1 var(--font-display)}
+.brandsub{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
+  padding:8px max(12px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));
+}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;padding:6px 4px;border-radius:12px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.02em}
+.tab svg{width:22px;height:22px}
+.tab[aria-current="page"]{color:var(--brand-ink)}
+.tab[aria-current="page"] svg{stroke-width:2.4}
+.tab.add{color:var(--on-brand)}
+.tab.add span.pill{background:var(--brand);border-radius:14px;width:44px;height:30px;display:grid;place-items:center;margin-top:-2px}
+
+@media (min-width:900px){
+  .shell{grid-template-columns:240px minmax(0,1fr);column-gap:32px;padding-block:24px 40px}
+  .rail{display:flex;flex-direction:column;gap:6px;position:sticky;top:24px;align-self:start;height:calc(100vh - 48px);background:var(--rail);color:var(--rail-ink);border-radius:22px;padding:22px 16px;box-shadow:var(--shadow)}
+  .rail .brandname{color:var(--rail-ink)} .rail .brandsub{color:var(--rail-muted)}
+  .rail .brandlock{padding:2px 6px 20px;border-bottom:1px solid rgba(227,197,112,.25);margin-bottom:12px}
+  .navitem{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;color:var(--rail-muted);padding:11px 12px;border-radius:12px;text-align:left;font-weight:700}
+  .navitem svg{width:20px;height:20px;flex:none}
+  .navitem:hover{background:rgba(255,255,255,.06);color:var(--rail-ink)}
+  .navitem[aria-current="page"]{background:rgba(227,197,112,.14);color:var(--hero-gold)}
+  .railfoot{margin-top:auto;display:grid;gap:10px}
+  .railnote{font-size:12px;line-height:1.5;color:var(--rail-muted);padding:0 6px}
+  .topbar,.tabbar{display:none}
+}
+
+/* ---------- buttons, chips ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:12px;padding:11px 16px;font-weight:700;font-size:14px;line-height:1.2;min-height:44px}
+.btn.primary{background:var(--brand);color:var(--on-brand)}
+.btn.soft{background:var(--brand-soft);color:var(--brand-ink)}
+.btn.ghost{background:var(--surface);border-color:var(--line);color:var(--brand-ink)}
+.btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn.small{min-height:38px;padding:8px 12px;font-size:13px}
+.btn svg{width:18px;height:18px;flex:none}
+.rail .btn.ghost{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:var(--rail-ink)}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:30px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.chip.good{background:var(--good-soft);color:var(--good)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.gold{background:rgba(227,197,112,.16);color:var(--hero-gold);box-shadow:inset 0 0 0 1px rgba(227,197,112,.4)}
+.chip.neutral{background:var(--surface2);color:var(--muted)}
+
+/* ---------- hero ---------- */
+.hero{background:linear-gradient(140deg,var(--hero-a),var(--hero-b));color:var(--hero-ink);border-radius:22px;padding:22px 20px 18px;box-shadow:var(--shadow)}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-muted);font-weight:700}
+.hero-amount{font:800 clamp(30px,8vw,46px)/1.1 var(--font-display);color:var(--hero-gold);margin-top:6px;overflow-wrap:anywhere}
+.hero-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid rgba(227,197,112,.3)}
+.hero-stats dt{font-size:11px;color:var(--hero-muted);letter-spacing:.04em}
+.hero-stats dd{font-weight:800;font-size:clamp(14px,3.6vw,18px);margin-top:4px;overflow-wrap:anywhere}
+
+.pagehead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:20px 0 12px}
+.pagehead h2{font:800 24px/1.15 var(--font-display)}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.toolrow{display:flex;gap:10px;flex-wrap:wrap}
+.toolrow .btn.primary{flex:1 1 100%}
+.toolrow .btn.ghost{flex:1 1 120px}
+@media (min-width:760px){.toolrow .btn.primary{flex:1 1 220px}}
+
+.searchbox{position:relative}
+.searchbox svg{position:absolute;left:14px;top:50%;translate:0 -50%;width:18px;height:18px;color:var(--muted);pointer-events:none}
+.search{width:100%;min-height:46px;padding:11px 14px 11px 42px;border:1px solid var(--line);border-radius:13px;background:var(--surface);outline:none}
+.search:focus{border-color:var(--brand)}
+
+/* ---------- avatars ---------- */
+.av{flex:none;display:grid;place-items:center;border-radius:50%;width:44px;height:44px;font-weight:800;font-size:15px;letter-spacing:.02em;background:hsl(var(--h) 34% var(--av-bg-l));color:hsl(var(--h) 48% var(--av-fg-l))}
+.av.lg{width:68px;height:68px;font-size:24px;font-family:var(--font-display)}
+
+/* ---------- home cards ---------- */
+.cards{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:760px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ccard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.chead{display:flex;gap:12px;align-items:center;min-width:0}
+.cid{min-width:0;flex:1}
+.linkname{border:0;background:none;padding:0;font-weight:800;font-size:16px;text-align:left;display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phone{color:var(--muted);font-size:12px;margin-top:2px}
+.remain{text-align:right;flex:none}
+.remain small{display:block;color:var(--muted);font-size:11px}
+.remain strong{font-size:17px;color:var(--brand-ink);font-weight:800}
+.remain strong.paid{color:var(--good)}
+.progress{height:6px;background:var(--surface2);border-radius:20px;overflow:hidden}
+.bar{height:100%;background:var(--brand);border-radius:20px}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fact{background:var(--surface2);border-radius:11px;padding:9px 10px;min-width:0}
+.fact small{display:block;color:var(--muted);font-size:10.5px;letter-spacing:.02em}
+.fact b{display:block;font-size:13px;margin-top:3px;overflow-wrap:anywhere}
+.guarline{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);min-width:0;flex-wrap:wrap}
+.guarline b{color:var(--ink)}
+.cactions{display:flex;gap:8px}
+.cactions .btn{flex:1;min-height:40px;padding:8px 6px;font-size:13px}
+.empty{text-align:center;background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius);padding:34px 18px;color:var(--muted)}
+.empty b{display:block;color:var(--ink);margin-bottom:6px;font-size:16px}
+
+/* ---------- contacts ---------- */
+.contacts{display:grid;gap:16px;grid-template-columns:minmax(0,1fr);align-items:start}
+.listpane{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.listtools{padding:12px;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.listscroll{overflow:auto;max-height:calc(100vh - 230px);min-height:120px}
+.letter{position:sticky;top:0;background:var(--surface2);color:var(--gold-ink);font:800 13px/1 var(--font-display);padding:7px 16px;letter-spacing:.08em;border-block:1px solid var(--line)}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:11px 16px}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--surface2)}
+.row[aria-current="true"]{background:var(--brand-soft)}
+.row .nm{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .ph{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .amt{text-align:right;font-weight:800;font-size:13px}
+.row .amt small{display:block;font-weight:600;color:var(--muted);font-size:10.5px}
+.detailpane{min-width:0}
+.detailph{display:none;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius);padding:60px 20px}
+.detail{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.dhead{display:flex;gap:16px;align-items:center;padding:20px;background:linear-gradient(140deg,var(--hero-a),var(--hero-b));color:var(--hero-ink)}
+.dhead h2{font:800 24px/1.15 var(--font-display);overflow-wrap:anywhere}
+.dhead .sub{color:var(--hero-muted);font-size:13px;margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dhead .av.lg{background:rgba(227,197,112,.16);color:var(--hero-gold);box-shadow:inset 0 0 0 1px rgba(227,197,112,.45)}
+.backbtn{display:inline-flex;margin:0 0 10px;border:0;background:none;color:var(--brand-ink);font-weight:700;padding:6px 2px;align-items:center;gap:6px}
+.backbtn svg{width:18px;height:18px}
+.dbody{padding:18px 20px 22px;display:grid;gap:18px}
+.bal{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.bal .big{font:800 clamp(28px,7vw,38px)/1.1 var(--font-display);color:var(--brand-ink)}
+.bal .big.paid{color:var(--good)}
+.sect{display:grid;gap:10px}
+.sect h3{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-ink);font-weight:800}
+.facts.auto{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.guarcard{border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--surface2)}
+.guarcard .who{display:flex;gap:12px;align-items:center;min-width:0}
+.guarcard b{display:block;overflow-wrap:anywhere}
+.numline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.numline a{color:var(--brand-ink);font-weight:700}
+.history{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.hrow{display:flex;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.hrow:last-child{border-bottom:0}
+.hrow b{white-space:nowrap}
+.dactions{display:flex;gap:10px;flex-wrap:wrap}
+.dactions .btn.primary{flex:1 1 180px}
+
+@media (min-width:900px){
+  .contacts{grid-template-columns:minmax(300px,380px) minmax(0,1fr)}
+  .detailph{display:block}
+  body[data-view="detail"] .detailph{display:none}
+  .backbtn{display:none}
+}
+@media (max-width:899.98px){
+  body[data-view="detail"] #contactsHead{display:none}
+  body[data-view="detail"] .listpane{display:none}
+  body[data-view="customers"] .detailpane{display:none}
+}
+
+/* ---------- modals ---------- */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(5,18,12,.62);display:none;align-items:flex-end;justify-content:center;padding:12px}
+.modal.show{display:flex}
+@media (min-width:600px){.modal{align-items:center}}
+.sheet{background:var(--surface);color:var(--ink);width:min(100%,560px);border-radius:22px;padding:22px 20px 20px;max-height:92vh;overflow:auto;box-shadow:var(--shadow);padding-bottom:max(20px,env(safe-area-inset-bottom,0px))}
+.sheet h3{font:800 22px/1.2 var(--font-display);margin-bottom:14px}
+.field{margin:12px 0}
+.field label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px}
+.field input{width:100%;min-height:46px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);outline:none}
+.field input:focus{border-color:var(--brand)}
+.field input:disabled{background:var(--surface2);color:var(--muted)}
+.field .hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:440px){.two{grid-template-columns:minmax(0,1fr)}}
+.groupbox{border:1px solid var(--line);background:var(--surface2);border-radius:14px;padding:4px 14px 10px;margin:16px 0 4px}
+.groupbox h4{margin:12px 0 0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-ink);font-weight:800}
+.groupbox .field input{background:var(--surface)}
+.calc{background:var(--surface2);border-radius:12px;padding:12px 14px;margin:12px 0;font-size:13px;line-height:1.8}
+.calc strong{color:var(--brand-ink)}
+.macts{display:flex;gap:10px;margin-top:16px}
+.macts .btn{flex:1}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));translate:-50% 0;background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:30px;font-size:13px;font-weight:700;display:none;z-index:60;max-width:calc(100vw - 32px);text-align:center}
+.toast.show{display:block}
+@media (min-width:900px){.toast{bottom:28px}}
+@media (prefers-reduced-motion:no-preference){
+  .detail,.ccard,.hero{animation:rise .28s ease both}
+  @keyframes rise{from{opacity:.0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+
+/* ---------- month status dots, filters ---------- */
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none;vertical-align:middle}
+.dot.ok{background:var(--good);box-shadow:0 0 0 3px var(--good-soft)}
+.dot.no{background:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)}
+.dot.na{background:var(--line)}
+.nm .dot{margin-right:9px}
+.mstat{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.monthtag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--gold-ink);margin-right:4px}
+.fbtn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:30px;padding:8px 14px;font-weight:700;font-size:13px;min-height:38px}
+.fbtn[aria-pressed="true"]{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.mstrip{display:flex;gap:8px;flex-wrap:wrap}
+.mcell{display:flex;flex-direction:column;align-items:center;gap:7px;background:var(--surface2);border-radius:11px;padding:10px 12px;min-width:56px;font-size:11.5px;font-weight:700;color:var(--muted)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+
+/* ---------- PDF statement (ledger style) ---------- */
+#printSheet{display:none}
+@page{size:A4;margin:12mm}
+@media print{
+  html,body{background:#fff!important}
+  .shell,.tabbar,.modal,.toast{display:none!important}
+  #printSheet{display:block}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+.ps{font:600 14px/1.5 'Manrope','Segoe UI',Roboto,Arial,sans-serif;color:#1c1f22;max-width:190mm;margin:0 auto}
+.ps h1{font:800 24px/1.1 'Manrope','Segoe UI',Roboto,Arial,sans-serif;margin:0;color:#f2d98a;letter-spacing:.3px}
+.ps-head{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#2b2f34;color:#f2f3f4;border-radius:10px;padding:14px 18px;border-bottom:3px solid #c9a24a}
+.ps-brand{display:flex;align-items:center;gap:12px}
+.ps-mark{width:44px;height:44px;border-radius:50%;border:1.5px solid #e3c570;color:#e3c570;display:grid;place-items:center;font:800 17px/1 'Manrope','Segoe UI',Roboto,Arial,sans-serif}
+.ps-brand p{margin:3px 0 0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#b6bcc2}
+.ps-date{text-align:right;font-size:11px;color:#b6bcc2}.ps-date b{color:#fff;font-size:12px}
+.ps-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.ps-box{border:1px solid #cfd3d7;border-radius:8px;padding:10px 12px}
+.ps-box h4{margin:0 0 6px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8a6a1e}
+.ps-box div{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+.ps-box span{color:#60676d}.ps-box b{text-align:right}
+.ps-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.ps-sum div{background:#f3f4f5;border-radius:8px;padding:8px 10px}
+.ps-sum small{display:block;font-size:10px;color:#60676d;letter-spacing:.04em}
+.ps-sum b{display:block;font-size:17px;margin-top:3px}
+.ps-sum .rem{background:#2b2f34;color:#f2d98a}.ps-sum .rem small{color:#b6bcc2}
+.ps h3{margin:16px 0 6px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8a6a1e}
+.ps table{width:100%;border-collapse:collapse;border:1.5px solid #b8433f}
+.ps th{background:#f3f4f5;font-size:13px;text-align:left;padding:7px 8px;border:1px solid #b8433f;border-bottom-width:2px}
+.ps td{padding:10px 8px;border-left:1px solid #b8433f;border-right:1px solid #b8433f;border-bottom:1px solid #d9dcdf}
+.ps td.n,.ps th.n{text-align:right;white-space:nowrap}
+.ps tr{page-break-inside:avoid}
+.ps tr.open td{background:#faf6ea;font-weight:700}
+.ps tr.end td{border-top:2px solid #b8433f;font-weight:800;background:#f3f4f5}
+.ps .adv{font-size:10px;background:#f5edd7;color:#7a5c15;border-radius:20px;padding:1px 7px;margin-left:4px}
+.ps-note{margin-top:10px;color:#60676d;font-size:11px}
+.ps-paid{display:inline-block;border:2px solid #18794c;color:#18794c;border-radius:6px;padding:3px 10px;font-weight:800;letter-spacing:.1em;transform:rotate(-4deg)}
+.ps-foot{display:flex;justify-content:space-between;gap:30px;margin-top:34px;font-size:11px;color:#60676d}
+.ps-foot div{flex:1;border-top:1px solid #8c9399;padding-top:5px;text-align:center}
+.ps .ur{font-family:'Noto Nastaliq Urdu','Noto Naskh Arabic','Jameel Noori Nastaleeq',serif;font-weight:700;}
+.ps small{font-size:10.5px;font-weight:600;color:#7a8187;letter-spacing:0}
+.ps-head small{color:#b6bcc2}.ps-sum .rem small{color:#b6bcc2}.ps-box h4 small{color:#8a6a1e}
+.ps-sum small{font-size:11.5px}
+.ps td:first-child{white-space:nowrap}
+.cactions{flex-wrap:wrap}
+.hrow .btn.small{min-height:32px;padding:4px 10px}
+
+
+/* New compact customer-first ledger layout */
+.contactcard{border:1px solid var(--line);border-radius:13px;background:var(--surface2);padding:11px;display:grid;gap:10px}
+.contactmain{display:flex;align-items:center;gap:10px;min-width:0}
+.contactidentity{min-width:0;display:grid;gap:4px}.contactidentity>b{font-size:16px}.contactextras{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:9px}
+.contactextras>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.contactextras small{color:var(--muted);min-width:76px;font-size:11px}.contactextras b{font-size:13px}
+.ledgerhead{display:flex;justify-content:space-between;align-items:center;gap:8px}.ledgerhead h3{margin-bottom:3px}
+.ledgerrow{display:grid;grid-template-columns:minmax(0,1.1fr) auto minmax(0,.9fr) auto;align-items:center;gap:8px;padding:10px 11px}
+.ledgerrow small{display:block;color:var(--muted);font-size:10px}.ledgerrow b{font-size:12.5px}.ledgerpaid{text-align:right;color:var(--good)}.ledgerremain{text-align:right}.ledgeractions .btn{min-height:30px}
+.balancefact{border:1px solid rgba(227,197,112,.4);background:var(--gold-soft)}.accountprogress{margin-top:9px}.detailEdit{margin-left:auto}
+@media(max-width:420px){.ledgerrow{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.ledgerdate{grid-column:1}.ledgerpaid{grid-column:2;grid-row:1;text-align:right}.ledgerremain{grid-column:1;grid-row:2;text-align:left}.ledgeractions{grid-column:2;grid-row:2;text-align:right}.contactextras small{min-width:68px}}
+/* Settings and theme palettes */
+:root[data-theme="emerald"]{--bg:#101b18;--surface:#182722;--surface2:#20332c;--ink:#edf4ef;--muted:#a6b8ad;--line:#344b40;--brand:#d7c18b;--on-brand:#18231d;--brand-soft:#2c4035;--brand-ink:#ead9aa;--gold:#d7bd7d;--gold-ink:#e5cf95;--gold-soft:#2c3024;--good:#80c9a0;--good-soft:#203a2b;--warn:#d9aa68;--warn-soft:#3b301e;--bad:#e28b8b;--bad-soft:#402727;--hero-a:#14251e;--hero-b:#284438;--hero-ink:#f1f6f2;--hero-muted:#b7c9bd;--hero-gold:#e1c986;--rail:#14231d;color-scheme:dark}
+:root[data-theme="blue"]{--bg:#111a29;--surface:#1b2739;--surface2:#24334a;--ink:#edf2fa;--muted:#a8b6c9;--line:#394a63;--brand:#c6d6ee;--on-brand:#172338;--brand-soft:#2b3c55;--brand-ink:#dce8f8;--gold:#d9bd78;--gold-ink:#e5ce94;--gold-soft:#302d25;--good:#79c9a2;--good-soft:#203a35;--warn:#ddb16e;--warn-soft:#3b301e;--bad:#e58c91;--bad-soft:#40272c;--hero-a:#18263b;--hero-b:#2a3c59;--hero-ink:#f2f5fb;--hero-muted:#bbc8da;--hero-gold:#e6cb86;--rail:#17263a;color-scheme:dark}
+:root[data-theme="light"]{--bg:#f2f3f5;--surface:#fff;--surface2:#f5f6f7;--ink:#252a30;--muted:#68717a;--line:#dfe2e6;--brand:#343a40;--on-brand:#fff;--brand-soft:#e9ecef;--brand-ink:#30363b;--gold:#b08a38;--gold-ink:#80601b;--gold-soft:#f7f0df;--good:#18794c;--good-soft:#e0f2e8;--warn:#9c5a0e;--warn-soft:#fbebd3;--bad:#c43a3a;--bad-soft:#f8e0e0;--hero-a:#2b2f34;--hero-b:#4a5057;--hero-ink:#f2f3f4;--hero-muted:#b6bcc2;--hero-gold:#e3c570;--rail:#2b2f34;color-scheme:light}
+.settingswrap{display:grid;gap:12px;max-width:760px}.settingscard{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:14px;display:grid;gap:10px}.settingscard h3{font-size:15px}.themegrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.themechoice{display:grid;grid-template-columns:42px 1fr;grid-template-rows:auto auto;align-items:center;text-align:left;gap:1px 9px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:9px;color:var(--ink)}.themechoice b,.themechoice small{grid-column:2}.themechoice b{font-size:12px}.themechoice small{font-size:10px;color:var(--muted)}.themechoice.active{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}.swatch{grid-row:1/3;width:40px;height:40px;border-radius:10px;border:1px solid var(--line)}.sw-dark{background:linear-gradient(135deg,#1d2024 50%,#d2ae5c 50%)}.sw-light{background:linear-gradient(135deg,#fff 50%,#b08a38 50%)}.sw-emerald{background:linear-gradient(135deg,#14251e 50%,#d7bd7d 50%)}.sw-blue{background:linear-gradient(135deg,#18263b 50%,#e6cb86 50%)}.settingtoggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line)}.settingtoggle b,.settingtoggle small{display:block}.settingtoggle b{font-size:13px}.settingtoggle small{font-size:11px;color:var(--muted)}.settingtoggle input{width:20px;height:20px;accent-color:var(--gold)}.securityform{display:flex;align-items:end;gap:9px;flex-wrap:wrap}.securityform .field{flex:1 1 130px;margin:0}.securitynote{font-size:10.5px;color:var(--muted);line-height:1.5}.lockcard{width:min(90vw,360px);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;text-align:center;box-shadow:var(--shadow);display:grid;gap:12px}.lockcard .mark{margin:auto;border-radius:50%;width:64px;height:64px}.lockcard h2{font-size:21px}.lockcard input{width:100%;min-height:48px;text-align:center;letter-spacing:.4em;border:1px solid var(--line);border-radius:12px;background:var(--surface2);color:var(--ink);font-size:20px}#lockView{position:fixed;inset:0;z-index:1000;background:var(--bg);display:grid;place-items:center;padding:20px}body[data-locked] .shell,body[data-locked] .tabbar{display:none!important}
+@media(min-width:900px){.tabbar{grid-template-columns:repeat(4,1fr)}}
+
+/* ---------- compact sizing ---------- */
+body{font-size:14px}
+.shell{padding-block:8px 80px}
+.topbar{padding:2px 0 10px}
+.mark{width:34px;height:34px;border-radius:10px;font-size:14px}
+.brandname{font-size:17px}.brandsub{font-size:10px;margin-top:2px}
+.tabbar{padding-top:5px;gap:2px}
+.tab{padding:4px 2px;font-size:10px;gap:2px}.tab svg{width:20px;height:20px}
+.tab.add span.pill{width:38px;height:26px;border-radius:12px}
+.btn{padding:7px 12px;font-size:13px;min-height:36px;gap:6px;border-radius:10px}
+.btn.small{min-height:30px;padding:4px 10px;font-size:12px}
+.btn svg{width:15px;height:15px}
+.chip{padding:2px 8px;font-size:11px;gap:4px}
+.hero{padding:16px 16px 13px;border-radius:18px}
+.eyebrow{font-size:10px}
+.hero-amount{font-size:clamp(24px,6.5vw,32px);margin-top:4px}
+.hero-stats{margin-top:12px;padding-top:11px;gap:8px}
+.hero-stats dt{font-size:10px}.hero-stats dd{font-size:clamp(13px,3.3vw,15px);margin-top:2px}
+.pagehead{margin:14px 0 8px}.pagehead h2{font-size:19px}
+.toolrow{gap:7px}
+.searchbox{margin:10px 0!important}
+.search{min-height:38px;padding:8px 12px 8px 36px;border-radius:10px;font-size:13.5px}
+.searchbox svg{width:16px;height:16px;left:12px}
+.av{width:36px;height:36px;font-size:13px}
+.av.lg{width:52px;height:52px;font-size:19px}
+.cards{gap:9px}
+.ccard{padding:12px;gap:9px;border-radius:14px}
+.chead{gap:10px}
+.linkname{font-size:14.5px}.phone{font-size:11.5px;margin-top:1px}
+.remain small{font-size:10px}.remain strong{font-size:15px}
+.progress{height:5px}
+.facts{gap:6px}
+.fact{padding:6px 8px;border-radius:9px}.fact small{font-size:9.5px}.fact b{font-size:12px;margin-top:2px}
+.guarline{font-size:11.5px;gap:6px}
+.cactions{gap:6px}
+.cactions .btn{min-height:32px;padding:5px 4px;font-size:12px}
+.mstat{font-size:11px;gap:6px}
+.filters{gap:6px;margin-bottom:10px}
+.fbtn{padding:5px 11px;min-height:30px;font-size:12px;gap:6px}
+.monthtag{font-size:10px}
+.dot{width:9px;height:9px}
+.row{padding:8px 12px;gap:10px}
+.row .nm{font-size:14px}.row .ph{font-size:11px}.row .amt{font-size:12px}
+.letter{padding:5px 12px;font-size:12px}
+.listtools{padding:8px;gap:6px}
+.dhead{padding:14px;gap:12px}.dhead h2{font-size:19px}.dhead .sub{font-size:12px;margin-top:3px}
+.dbody{padding:12px 14px 16px;gap:12px}
+.bal .big{font-size:clamp(22px,6vw,28px)}
+.sect{gap:8px}.sect h3{font-size:10px}
+.facts.auto{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.guarcard{padding:10px;gap:8px;border-radius:12px}
+.hrow{padding:8px 12px}
+.hrow .btn.small{min-height:28px;padding:3px 9px}
+.mcell{padding:7px 9px;min-width:46px;font-size:10.5px;gap:5px;border-radius:9px}
+.dactions{gap:7px}.dactions .btn.primary{flex:1 1 100%}
+.sheet{padding:16px 15px 15px;border-radius:18px}
+.sheet h3{font-size:18px;margin-bottom:10px}
+.field{margin:9px 0}.field label{font-size:11px;margin-bottom:4px}
+.field input{min-height:38px;padding:7px 10px;border-radius:10px;font-size:14px}
+.field .hint{font-size:10.5px}
+.two{gap:8px}
+.groupbox{padding:2px 11px 7px;margin:12px 0 3px;border-radius:12px}.groupbox h4{font-size:10px;margin-top:9px}
+.calc{padding:8px 11px;margin:9px 0;font-size:12px;line-height:1.7;border-radius:10px}
+.macts{margin-top:12px;gap:8px}
+.empty{padding:24px 14px}.empty b{font-size:14px}
+.toast{font-size:12px;padding:8px 14px}
+.navitem{padding:8px 10px;font-size:13px}
+.ccard.mini{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:9px 12px;width:100%;text-align:left;color:inherit;cursor:pointer;flex-direction:row}
+.ccard.mini:active{background:var(--surface2)}
+.mname{display:flex;align-items:center;gap:8px;min-width:0;font-weight:800;font-size:14.5px}
+.mtxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mamt{text-align:right;min-width:0}
+.mamt small{display:block;font-size:10px;color:var(--muted);font-weight:600}
+.mamt b{display:block;font-size:13px;font-weight:800;margin-top:1px;white-space:nowrap}
+.mamt.rem b{color:var(--brand-ink)}.mamt b.paidup{color:var(--good)}
+@media (max-width:360px){.ccard.mini{gap:7px;padding:8px 9px}.mamt b{font-size:12px}}
+.bbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:12px}
+.bbar b{display:block;font-size:12.5px}.bbar span{color:var(--muted)}
+.bbar.due{border-color:var(--hero-gold);background:var(--gold-soft)}
+.bbar.due b{color:var(--gold-ink)}
+#authView{position:fixed;inset:0;z-index:80;background:var(--bg);overflow:auto;padding:16px 16px 28px;display:flex;justify-content:center;align-items:flex-start}
+.authbox{width:min(100%,420px);margin-top:5vh}
+.authtabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px;background:var(--surface2);padding:4px;border-radius:12px;margin-top:16px}
+.authtabs button{border:0;background:none;padding:8px;border-radius:9px;font-weight:700;color:var(--muted);font-size:13px}
+.authtabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.authtabs button[hidden]{display:none}
+.authcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 15px;margin-top:12px;box-shadow:var(--shadow)}
+.autherr{color:var(--bad);font-size:12px;min-height:16px;margin:6px 0 8px;font-weight:700}
+.field select{width:100%;min-height:38px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:inherit;font-size:14px}
+.topact{display:flex;gap:6px;align-items:center}
+body[data-auth] .shell,body[data-auth] .tabbar{display:none!important}
+
+/* Aamir Digital Apps cinematic startup intro */
+#adaSplash{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 42%,#202c49 0%,#101522 42%,#080b12 100%);color:#f8fbff;opacity:1;visibility:visible;animation:adaSplashOut .75s ease 3.05s forwards}
+#adaSplash:before,#adaSplash:after{content:"";position:absolute;width:72vmin;height:72vmin;border:1px solid rgba(100,190,255,.15);border-radius:50%;animation:adaOrbit 12s linear infinite;pointer-events:none}
+#adaSplash:after{width:92vmin;height:92vmin;border-color:rgba(190,115,255,.12);animation-direction:reverse;animation-duration:18s}
+.ada-glow{position:absolute;width:65vmin;height:65vmin;border-radius:50%;background:conic-gradient(from 0deg,rgba(28,220,255,.15),rgba(155,91,255,.16),rgba(255,190,82,.12),rgba(28,220,255,.15));filter:blur(48px);animation:adaPulse 2.8s ease-in-out infinite;pointer-events:none}
+.ada-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px}
+.ada-mark{width:126px;height:126px;filter:drop-shadow(0 0 18px rgba(73,190,255,.35));animation:adaMarkIn .9s cubic-bezier(.2,.8,.2,1) both}
+.ada-brand{margin-top:24px;font:800 clamp(27px,7vw,39px)/1.1 system-ui,sans-serif;letter-spacing:.045em;background:linear-gradient(100deg,#fff 5%,#8be9ff 43%,#c7a2ff 72%,#ffe0a0 100%);-webkit-background-clip:text;background-clip:text;color:transparent;animation:adaTextIn .8s ease .35s both}
+.ada-tag{margin-top:10px;color:#9eabc1;font:600 10px/1.4 system-ui,sans-serif;letter-spacing:.34em;text-transform:uppercase;animation:adaTextIn .8s ease .55s both}
+.ada-rule{width:116px;height:2px;margin-top:25px;border-radius:9px;background:linear-gradient(90deg,transparent,#58dcff,#b68aff,#ffd27b,transparent);background-size:200% 100%;animation:adaShimmer 1.6s linear infinite,adaTextIn .8s ease .7s both}
+.ada-credit{margin-top:28px;color:#e7edf8;font:500 13px/1.5 system-ui,sans-serif;letter-spacing:.08em;animation:adaTextIn .8s ease .85s both}
+.ada-credit strong{display:block;margin-top:4px;font-size:17px;font-weight:800;letter-spacing:.11em;color:#fff}
+@keyframes adaOrbit{to{transform:rotate(360deg)}}
+@keyframes adaPulse{0%,100%{transform:scale(.88);opacity:.65}50%{transform:scale(1.08);opacity:1}}
+@keyframes adaMarkIn{from{opacity:0;transform:translateY(20px) scale(.72) rotate(-12deg)}to{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
+@keyframes adaTextIn{from{opacity:0;transform:translateY(12px);filter:blur(5px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+@keyframes adaShimmer{to{background-position:200% 0}}
+@keyframes adaSplashOut{to{opacity:0;visibility:hidden;pointer-events:none}}
+@media(prefers-reduced-motion:reduce){#adaSplash,.ada-mark,.ada-brand,.ada-tag,.ada-rule,.ada-credit,.ada-glow{animation:none!important}#adaSplash{animation:adaSplashOut .2s ease 1.5s forwards}}
+
+</style>
+
+</head>
+<body>
+
+<div id="adaSplash" aria-label="Created by Aamir Digital Apps">
+  <div class="ada-glow"></div>
+  <div class="ada-content">
+    <svg class="ada-mark" viewBox="0 0 140 140" role="img" aria-label="Aamir Digital Apps logo">
+      <defs>
+        <linearGradient id="adaGrad" x1="12" y1="12" x2="128" y2="128" gradientUnits="userSpaceOnUse"><stop stop-color="#5CE1FF"/><stop offset=".48" stop-color="#9B83FF"/><stop offset="1" stop-color="#FFD17A"/></linearGradient>
+        <linearGradient id="adaFace" x1="34" y1="25" x2="105" y2="115" gradientUnits="userSpaceOnUse"><stop stop-color="#253D61"/><stop offset="1" stop-color="#111A2C"/></linearGradient>
+      </defs>
+      <circle cx="70" cy="70" r="61" fill="none" stroke="url(#adaGrad)" stroke-width="1.8" opacity=".7"/>
+      <path d="M70 17 112 41v58l-42 24-42-24V41z" fill="url(#adaFace)" stroke="url(#adaGrad)" stroke-width="2.5"/>
+      <path d="m70 36 25 14v29L70 94 45 79V50z" fill="none" stroke="url(#adaGrad)" stroke-width="2" opacity=".9"/>
+      <path d="m70 36 0 58m-25-44 50 29m0-29L45 79" stroke="url(#adaGrad)" stroke-width="2" opacity=".65"/>
+      <path d="M53 77 70 47l17 30h-9l-8-15-8 15z" fill="#F8FBFF"/>
+      <path d="M70 88h18" stroke="#5CE1FF" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="112" cy="41" r="4" fill="#FFD17A"/>
+    </svg>
+    <div class="ada-brand">AAMIR DIGITAL APPS</div>
+    <div class="ada-tag">Crafting Digital Experiences</div>
+    <div class="ada-rule"></div>
+    <div class="ada-credit">Created by<strong>Aamir Digital Apps</strong></div>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 3.1-.2-.1a1.7 1.7 0 0 0-1.9.1l-.2.1h-3.6l-.1-.2a1.7 1.7 0 0 0-1.6-1l-.2.1-3.1-1.8.1-.2a1.7 1.7 0 0 0-.1-1.9l-.1-.2v-3.6l.2-.1a1.7 1.7 0 0 0 1-1.6l-.1-.2 1.8-3.1.2.1a1.7 1.7 0 0 0 1.9-.1l.2-.1h3.6l.1.2a1.7 1.7 0 0 0 1.6 1l.2-.1 3.1 1.8-.1.2a1.7 1.7 0 0 0 .1 1.9l.1.2v3.6z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 21h16"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+  <aside class="rail" aria-label="Main">
+    <div class="brandlock"><span class="mark">HM</span><div><div class="brandname">Hm Book</div><div class="brandsub">Installment ledger</div></div></div>
+    <button class="navitem" id="navHome" data-act="nav" data-view="home"><svg><use href="#i-home"/></svg>Home</button>
+    <button class="navitem" id="navCust" data-act="nav" data-view="customers"><svg><use href="#i-users"/></svg>Customers</button>
+    <button class="navitem" id="navSettings" data-act="nav" data-view="settings"><svg><use href="#i-settings"/></svg>Settings</button>
+    <div class="railfoot">
+      <button class="btn ghost installBtn" data-act="install" hidden><svg><use href="#i-down"/></svg>Install app</button>
+      <button class="btn ghost" data-act="logout">Log out</button>
+      <p class="railnote">Records are kept on this device only. Take a Backup regularly, and use Import to restore.</p>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="brandlock"><span class="mark">HM</span><div><div class="brandname">Hm Book</div><div class="brandsub">Installment ledger</div></div></div>
+      <div class="topact"><button class="btn soft small installBtn" data-act="install" hidden><svg><use href="#i-down"/></svg>Install</button><button class="btn ghost small" data-act="logout">Log out</button></div>
+    </header>
+
+    <!-- HOME -->
+    <section id="viewHome" aria-label="Home">
+      <div class="hero">
+        <div class="hero-top">
+          <div><p class="eyebrow">Total remaining</p><p class="hero-amount" id="sRemaining">Rs. 0</p></div>
+          <span class="chip gold">Flexible profit</span>
+        </div>
+        <dl class="hero-stats">
+          <div><dt>Customers</dt><dd id="sCustomers">0</dd></div>
+          <div><dt>Received</dt><dd id="sReceived">Rs. 0</dd></div>
+          <div><dt>Expected profit</dt><dd id="sProfit">Rs. 0</dd></div>
+        </dl>
+      </div>
+
+      <div id="backupBar"></div>
+      <div class="pagehead"><h2>Ledger</h2><span class="muted small" id="homeCount"></span></div>
+      <div class="toolrow">
+        <button class="btn primary" data-act="add"><svg><use href="#i-plus"/></svg>Add customer</button>
+        <button class="btn ghost" data-act="backup"><svg><use href="#i-down"/></svg>Full Backup</button>
+        <button class="btn ghost" data-act="import"><svg><use href="#i-up"/></svg>Import</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+      </div>
+      <div class="searchbox" style="margin:14px 0">
+        <svg><use href="#i-search"/></svg>
+        <label class="sr" for="qHome">Search customers</label>
+        <input class="search" id="qHome" type="search" placeholder="Search name, phone or zimawar" autocomplete="off">
+      </div>
+      <div class="filters" id="filters"></div>
+      <div class="cards" id="homeCards"></div>
+      <p class="muted small" style="margin-top:18px;line-height:1.6">Your records are saved in this browser on this device. Use Backup regularly to keep a copy. If you clear browser data or change phones, restore with Import.</p>
+    </section>
+
+    <!-- CUSTOMERS (contacts) -->
+    <section id="viewContacts" aria-label="Customers" hidden>
+      <div class="pagehead" id="contactsHead"><h2>Customers</h2><button class="btn primary small" data-act="add"><svg><use href="#i-plus"/></svg>Add</button></div>
+      <div class="contacts">
+        <div class="listpane">
+          <div class="listtools">
+            <div class="searchbox">
+              <svg><use href="#i-search"/></svg>
+              <label class="sr" for="qCont">Search contacts</label>
+              <input class="search" id="qCont" type="search" placeholder="Search customers" autocomplete="off">
+            </div>
+            <span class="muted small" id="contCount"></span>
+          </div>
+          <div class="listscroll" id="contList"></div>
+        </div>
+        <div class="detailpane">
+          <div class="detailph" id="detailPh"><b style="display:block;color:var(--ink);margin-bottom:6px;font-size:16px">No customer selected</b>Choose a name from the list to see the full record, zimawar details and payment history.</div>
+          <div id="detail"></div>
+        </div>
+      </div>
+    </section>
+    <section id="viewSettings" aria-label="Settings" hidden>
+      <div class="pagehead"><h2>Settings</h2></div>
+      <div class="settingswrap">
+        <section class="settingscard"><h3>Appearance</h3><p class="muted small">Choose the look of Hm Book.</p><div class="themegrid">
+          <button class="themechoice" data-act="theme" data-theme-choice="dark"><span class="swatch sw-dark"></span><b>Charcoal Gold</b><small>Current classic</small></button>
+          <button class="themechoice" data-act="theme" data-theme-choice="light"><span class="swatch sw-light"></span><b>Pure White</b><small>Clean and bright</small></button>
+          <button class="themechoice" data-act="theme" data-theme-choice="emerald"><span class="swatch sw-emerald"></span><b>Emerald</b><small>Deep green</small></button>
+          <button class="themechoice" data-act="theme" data-theme-choice="blue"><span class="swatch sw-blue"></span><b>Royal Blue</b><small>Classic blue</small></button>
+        </div></section>
+        <section class="settingscard"><h3>App security</h3><p class="muted small">Optional lock when Hm Book is opened again.</p>
+          <label class="settingtoggle"><span><b>4-digit PIN lock</b><small>Ask for PIN when reopening the app</small></span><input id="pinEnabled" type="checkbox"></label>
+          <div id="pinSetup" class="securityform" hidden><div class="field"><label for="newPin">Create 4-digit PIN</label><input id="newPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="••••" autocomplete="new-password"></div><div class="field"><label for="confirmPin">Confirm PIN</label><input id="confirmPin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="new-password"></div><button class="btn primary" id="savePin" data-act="savepin">Save PIN</button></div>
+          <div class="toolrow" id="pinRemoveRow" hidden><button class="btn danger small" data-act="removepin">Remove PIN</button></div>
+          <div class="settingtoggle"><span><b>Fingerprint / device biometric</b><small>Uses your phone's supported screen-lock authenticator</small></span><button class="btn ghost small" id="bioSetup" data-act="biometric">Set up</button></div><p id="bioStatus" class="muted small"></p><div class="toolrow" id="bioRemoveRow" hidden><button class="btn danger small" data-act="removebio">Remove fingerprint from app</button></div>
+          <p class="securitynote">Biometric login requires HTTPS and a supported phone/browser. Depending on your device, it may ask for fingerprint, face, or the phone's screen-lock PIN.</p>
+        </section>
+        <section class="settingscard"><h3>Data & account</h3><p class="muted small">Your records stay on this device. Take regular backups.</p><div class="toolrow"><button class="btn ghost" data-act="backup">Full Backup</button><button class="btn ghost" data-act="import">Import Backup</button><button class="btn danger" data-act="logout">Log out</button></div></section>
+      </div>
+    </section>
+  </div>
+</div>
+
+<nav class="tabbar" aria-label="Main">
+  <button class="tab" id="tabHome" data-act="nav" data-view="home"><svg><use href="#i-home"/></svg>Home</button>
+  <button class="tab add" data-act="add" aria-label="Add customer"><span class="pill"><svg style="width:22px;height:22px"><use href="#i-plus"/></svg></span><span style="color:var(--muted)">Add</span></button>
+  <button class="tab" id="tabCust" data-act="nav" data-view="customers"><svg><use href="#i-users"/></svg>Customers</button>
+  <button class="tab" id="tabSettings" data-act="nav" data-view="settings"><svg><use href="#i-settings"/></svg>Settings</button>
+</nav>
+
+<!-- Add / edit customer -->
+<div class="modal" id="customerModal" role="dialog" aria-modal="true" aria-labelledby="customerTitle">
+  <div class="sheet">
+    <h3 id="customerTitle">Add customer</h3>
+    <form id="customerForm" novalidate>
+      <input type="hidden" id="editId">
+      <div class="field"><label for="name">Customer name *</label><input id="name" required maxlength="80" placeholder="Full name" autocomplete="off"></div>
+      <div class="field"><label for="phone">Customer phone</label><input id="phone" inputmode="tel" maxlength="30" placeholder="03xx xxxxxxx" autocomplete="off"></div>
+      <div class="field"><label for="item">Item (what was sold)</label><input id="item" maxlength="80" placeholder="e.g. Air conditioner" autocomplete="off"></div>
+      <div class="field"><label for="itemDetails">Item details (optional)</label><input id="itemDetails" maxlength="200" placeholder="Brand, model, IMEI / serial no, colour" autocomplete="off"></div>
+      <div class="two">
+        <div class="field"><label for="original">Original amount (Rs.) *</label><input id="original" type="number" inputmode="numeric" min="1" step="1" required placeholder="22000"></div>
+        <div class="field"><label for="profitRate">Profit (%) *</label><input id="profitRate" type="number" inputmode="decimal" min="0" max="500" step="0.5" value="35" required></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="monthly">Monthly installment (Rs.)</label><input id="monthly" type="number" inputmode="numeric" min="0" step="1" placeholder="3000"></div>
+        <div class="field"><label for="advance">Advance (Rs.) optional</label><input id="advance" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
+      </div>
+      <div class="field"><label for="startDate">Purchase date *</label><input id="startDate" type="date" required></div>
+      <div class="calc" id="calcBox"></div>
+      <div class="groupbox">
+        <h4>Zimawar 1 (required)</h4>
+        <div class="two">
+          <div class="field"><label for="gname">Name *</label><input id="gname" required maxlength="80" placeholder="Guarantor name" autocomplete="off"></div>
+          <div class="field"><label for="gphone">Phone *</label><input id="gphone" inputmode="tel" maxlength="30" placeholder="03xx xxxxxxx" autocomplete="off"></div>
+        </div>
+      </div>
+      <div class="groupbox">
+        <h4>Zimawar 2 (optional)</h4>
+        <div class="two">
+          <div class="field"><label for="gname2">Name</label><input id="gname2" maxlength="80" placeholder="Second guarantor name" autocomplete="off"></div>
+          <div class="field"><label for="gphone2">Phone</label><input id="gphone2" inputmode="tel" maxlength="30" placeholder="03xx xxxxxxx" autocomplete="off"></div>
+        </div>
+      </div>
+      <div class="macts">
+        <button type="button" class="btn ghost" data-act="closeModal" data-modal="customerModal">Cancel</button>
+        <button type="submit" class="btn primary">Save customer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Payment -->
+<div class="modal" id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+  <div class="sheet">
+    <h3 id="payTitle">Record payment</h3>
+    <form id="paymentForm" novalidate>
+      <input type="hidden" id="paymentId"><input type="hidden" id="paymentIdx">
+      <div class="field"><label for="paymentCustomer">Customer</label><input id="paymentCustomer" disabled></div>
+      <div class="two">
+        <div class="field"><label for="paymentAmount">Amount received (Rs.) *</label><input id="paymentAmount" type="number" inputmode="numeric" min="1" step="1" required></div>
+        <div class="field"><label for="paymentDate">Payment date</label><input id="paymentDate" type="date" required></div>
+      </div>
+      <div class="field"><label for="paymentNote">Note (optional)</label><input id="paymentNote" maxlength="120" placeholder="e.g. October installment" autocomplete="off"></div>
+      <div class="calc" id="paymentCalc"></div>
+      <div class="macts">
+        <button type="button" class="btn danger" id="payDel" data-act="delpay" hidden>Delete</button>
+        <button type="button" class="btn ghost" data-act="closeModal" data-modal="paymentModal">Cancel</button>
+        <button type="submit" class="btn primary">Save payment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="modal" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="cTitle">
+  <div class="sheet">
+    <h3 id="cTitle">Are you sure?</h3>
+    <p id="cMsg" class="muted" style="line-height:1.6"></p>
+    <div class="macts">
+      <button type="button" class="btn ghost" data-act="closeModal" data-modal="confirmModal">Cancel</button>
+      <button type="button" class="btn primary" id="cOk" data-act="confirmOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="authView" hidden>
+  <div class="authbox">
+    <div class="brandlock"><span class="mark">HM</span><div><div class="brandname" style="font-size:20px">Hm Book</div><div class="brandsub">Installment ledger</div></div></div>
+    <div class="authtabs"><button type="button" id="tabLogin" data-act="authtab" data-t="login" aria-pressed="true">Log in</button><button type="button" id="tabSignup" data-act="authtab" data-t="signup" aria-pressed="false">Create account</button></div>
+    <div class="authcard">
+      <form id="loginForm" novalidate>
+        <div class="field"><label for="loginUser">Account</label><select id="loginUser"></select></div>
+        <div class="field"><label for="loginPw">Password</label><input id="loginPw" type="password" autocomplete="current-password" placeholder="Your password"></div>
+        <p class="autherr" id="loginErr" role="alert"></p>
+        <button type="submit" class="btn primary" style="width:100%">Log in</button>
+      </form>
+      <form id="signupForm" novalidate hidden>
+        <div class="field"><label for="suBiz">Business name *</label><input id="suBiz" maxlength="60" placeholder="e.g. Aamir Leasing Service" autocomplete="organization"><div class="hint">Ye naam app aur PDF statement ke upar aayega.</div></div>
+        <div class="field"><label for="suOwner">Your name *</label><input id="suOwner" maxlength="60" placeholder="Owner name" autocomplete="name"></div>
+        <div class="field"><label for="suPhone">Phone</label><input id="suPhone" inputmode="tel" maxlength="30" placeholder="03xx xxxxxxx" autocomplete="tel"></div>
+        <div class="two">
+          <div class="field"><label for="suPw">Password *</label><input id="suPw" type="password" autocomplete="new-password" placeholder="Min 4 characters"></div>
+          <div class="field"><label for="suPw2">Confirm password *</label><input id="suPw2" type="password" autocomplete="new-password" placeholder="Repeat"></div>
+        </div>
+        <p class="autherr" id="signupErr" role="alert"></p>
+        <button type="submit" class="btn primary" style="width:100%">Create account</button>
+      </form>
+    </div>
+    <p class="muted small" style="margin-top:12px;line-height:1.6">Account is phone ke andar hi banta hai, internet ya server nahi chahiye. Har account ka hisaab alag rehta hai. Password bhool gaye to wo wapas nahi aa sakta, is liye Backup lete raho.</p>
+  </div>
+</div>
+
+<div id="lockView" hidden><div class="lockcard"><span class="mark">HM</span><h2>Hm Book is locked</h2><p class="muted small">Enter your PIN to continue.</p><input id="unlockPin" type="password" inputmode="numeric" maxlength="4" placeholder="4-digit PIN" autocomplete="current-password"><p id="lockError" class="autherr"></p><button class="btn primary" id="unlockBtn" data-act="unlock">Unlock</button><button class="btn ghost" id="bioUnlock" data-act="biounlock" hidden>Use fingerprint</button></div></div>
+<div id="printSheet" aria-hidden="true"></div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var LEGACY='customerInstallments35', KEY='', uid='', user=null;
+function $(id){return document.getElementById(id)}
+
+/* ---------- data ---------- */
+function normalize(c){
+  if(!c||typeof c!=='object')return null;
+  return {
+    id:String(c.id||(Date.now()+''+Math.floor(Math.random()*1000))),
+    name:String(c.name||'Unnamed').slice(0,80),
+    phone:String(c.phone||'').slice(0,30),
+    item:String(c.item||'').slice(0,80),
+    itemDetails:String(c.itemDetails||'').slice(0,200),
+    original:Number(c.original)||0,
+    monthly:Number(c.monthly)||0,
+    profitRate:(Number.isFinite(Number(c.profitRate))&&Number(c.profitRate)>=0&&Number(c.profitRate)<=500)?Number(c.profitRate):35,
+    guarantorName:String(c.guarantorName||'').slice(0,80),
+    guarantorPhone:String(c.guarantorPhone||'').slice(0,30),
+    guarantor2Name:String(c.guarantor2Name||'').slice(0,80),
+    guarantor2Phone:String(c.guarantor2Phone||'').slice(0,30),
+    start:/^\d{4}-\d{2}-\d{2}$/.test(String(c.start||''))?String(c.start):'',
+    payments:(Array.isArray(c.payments)?c.payments:[]).map(function(p){return {amount:Number(p&&p.amount)||0,date:String((p&&p.date)||''),note:String((p&&p.note)||'').slice(0,120),adv:!!(p&&p.adv)}}).filter(function(p){return p.amount>0})
+  };
+}
+function load(){
+  try{var d=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(d)?d.map(normalize).filter(Boolean):[]}catch(e){return []}
+}
+var customers=[], filter='all', selectedId=null, view='home', deferredPrompt=null, confirmResolve=null;
+function persist(){if(!KEY)return;
+  try{localStorage.setItem(KEY,JSON.stringify(customers))}catch(e){toast('Could not save on this device')}
+  renderAll();
+}
+function find(id){for(var i=0;i<customers.length;i++)if(customers[i].id===id)return customers[i];return null}
+function money(n){return 'Rs. '+Math.round(Number(n)||0).toLocaleString('en-PK')}
+function rateOf(c){return (Number.isFinite(Number(c.profitRate))?Number(c.profitRate):35)/100}
+function total(c){return Math.round(c.original*(1+rateOf(c)))}
+function paid(c){return c.payments.reduce(function(s,p){return s+p.amount},0)}
+function remaining(c){return Math.max(0,total(c)-paid(c))}
+function hasGuarantor(c){return !!(c.guarantorName&&c.guarantorPhone)}
+function has2(c){return !!(c.guarantor2Name||c.guarantor2Phone)}
+function pad2(n){return String(n).padStart(2,'0')}
+function nowKey(){var d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)}
+function keyMonthName(k){var p=k.split('-');return new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString('en-GB',{month:'short'})}
+function paidIn(c,k){return c.payments.some(function(p){return !p.adv&&p.date&&p.date.slice(0,7)===k})}
+function startDateOf(c){
+  if(c.start)return c.start;
+  var n=Number(c.id);if(n>1e12&&n<4e12){var d=new Date(n);return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())}
+  var m='';c.payments.forEach(function(p){if(p.date&&(!m||p.date<m))m=p.date});
+  return m||stamp();
+}
+function startKey(c){return startDateOf(c).slice(0,7)}
+function nextKey(k){var y=Number(k.slice(0,4)),m=Number(k.slice(5,7))+1;if(m>12){m=1;y++}return y+'-'+pad2(m)}
+function keyMonthYear(k){var p=k.split('-');return new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'})}
+function advOf(c){return c.payments.reduce(function(s,p){return s+(p.adv?p.amount:0)},0)}
+function isDone(c){return total(c)>0&&remaining(c)<=0}
+function mstate(c){if(isDone(c))return 'done';if(paidIn(c,nowKey()))return 'ok';return nowKey()<=startKey(c)?'wait':'no'}
+function statusHtml(c){
+  var s=mstate(c),m=keyMonthName(nowKey());
+  if(s==='done')return '<span class="mstat"><span class="dot ok"></span>Fully paid</span>';
+  if(s==='wait')return '<span class="mstat"><span class="dot na"></span>Installments start '+keyMonthName(nextKey(startKey(c)))+'</span>';
+  return s==='ok'?'<span class="mstat"><span class="dot ok"></span>'+m+': Paid</span>':'<span class="mstat"><span class="dot no"></span>'+m+': Not paid</span>';
+}
+function monthStrip(c){
+  var cur=nowKey(),start=cur,keys=[],last='';
+  c.payments.forEach(function(p){var k=(p.date||'').slice(0,7);if(/^\d{4}-\d{2}$/.test(k)){if(k<start)start=k;if(k>last)last=k}});
+  var k2=startKey(c);if(k2<start)start=k2;var sk=k2;
+  var y=Number(cur.slice(0,4)),m=Number(cur.slice(5,7));
+  for(var i=0;i<6;i++){var k=y+'-'+pad2(m);if(k<start)break;keys.unshift(k);m--;if(m<1){m=12;y--}}
+  var done=isDone(c);
+  return '<div class="mstrip">'+keys.map(function(k){
+    var cls=paidIn(c,k)?'ok':((k<=sk||(done&&k>last))?'na':'no');
+    return '<div class="mcell"><span class="dot '+cls+'"></span><span>'+keyMonthName(k)+'</span></div>';
+  }).join('')+'</div><p class="muted small">Green dot: a payment was recorded in that month. Red dot: nothing was received. Grey dot: not due yet (installments start the month after purchase).</p>';
+}
+function esc(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]})}
+function fmtDate(s){if(!s)return '';var d=new Date(s+'T00:00:00');return isNaN(d)?s:d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+function addedOn(c){var n=Number(c.id);return(n>1e12&&n<4e12)?new Date(n).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):''}
+function telHref(p){return 'tel:'+String(p).replace(/[^0-9+]/g,'')}
+function initials(n){var w=n.trim().split(/\s+/).filter(Boolean);if(!w.length)return '?';var a=Array.from(w[0])[0]||'';var b=w[1]?(Array.from(w[1])[0]||''):'';return (a+b).toUpperCase()}
+function hue(n){var h=0;Array.from(n).forEach(function(ch){h=(h*31+ch.codePointAt(0))%360});return h}
+function avatar(n,cls){return '<span class="av '+(cls||'')+'" style="--h:'+hue(n)+'" aria-hidden="true">'+esc(initials(n))+'</span>'}
+function letterOf(n){var ch=(Array.from(n.trim())[0]||'#').toUpperCase();return /\p{L}/u.test(ch)?ch:'#'}
+
+/* ---------- toast / modals ---------- */
+var toastTimer=null;
+function toast(s){var t=$('toast');t.textContent=s;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show')},2400)}
+function openModal(id,focusId){$(id).classList.add('show');var f=focusId&&$(focusId);if(f)setTimeout(function(){f.focus()},30)}
+function closeModal(id){
+  $(id).classList.remove('show');
+  if(id==='confirmModal'&&confirmResolve){var r=confirmResolve;confirmResolve=null;r(false)}
+}
+function askConfirm(title,msg,ok,danger){
+  return new Promise(function(res){
+    confirmResolve=res;$('cTitle').textContent=title;$('cMsg').textContent=msg;
+    var b=$('cOk');b.textContent=ok||'Confirm';b.className='btn '+(danger?'danger':'primary');
+    openModal('confirmModal');
+  });
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){['customerModal','paymentModal','confirmModal'].forEach(function(id){if($(id).classList.contains('show'))closeModal(id)})}});
+['customerModal','paymentModal','confirmModal'].forEach(function(id){$(id).addEventListener('mousedown',function(e){if(e.target===$(id))closeModal(id)})});
+
+/* ---------- routing ---------- */
+function route(){
+  var h=location.hash.replace('#','');
+  view=h==='settings'?'settings':(h==='customers'?'customers':(h==='detail'&&find(selectedId)?'detail':(h==='detail'?'customers':'home')));
+  document.body.setAttribute('data-view',view);
+  $('viewHome').hidden=view!=='home';
+  $('viewContacts').hidden=!(view==='customers'||view==='detail');
+  $('viewSettings').hidden=view!=='settings';
+  var onCust=view==='customers'||view==='detail';
+  [['navHome','tabHome',view==='home'],['navCust','tabCust',onCust],['navSettings','tabSettings',view==='settings']].forEach(function(x){
+    [$(x[0]),$(x[1])].forEach(function(el){if(x[2])el.setAttribute('aria-current','page');else el.removeAttribute('aria-current')});
+  });
+  renderContacts();
+  window.scrollTo(0,0);
+}
+function go(v){if(location.hash==='#'+v)route();else location.hash=v}
+window.addEventListener('hashchange',route);
+
+/* ---------- render ---------- */
+function renderStats(){
+  var rec=0,rem=0,profit=0;
+  customers.forEach(function(c){rec+=paid(c);rem+=remaining(c);profit+=c.original*rateOf(c)});
+  $('sCustomers').textContent=customers.length;
+  $('sRemaining').textContent=money(rem);
+  $('sReceived').textContent=money(rec);
+  $('sProfit').textContent=money(profit);
+}
+function guarLine(c){
+  if(!hasGuarantor(c))return '<div class="guarline"><span class="chip warn">Zimawar missing</span><span>Edit to add name and phone</span></div>';
+  return '<div class="guarline"><span>Zimawar</span><b>'+esc(c.guarantorName)+'</b><span>'+esc(c.guarantorPhone)+'</span>'+(has2(c)?'<span class="chip neutral">+1 more</span>':'')+'</div>';
+}
+function renderHome(){
+  var q=$('qHome').value.trim().toLowerCase();
+  var nNo=0,nOk=0;customers.forEach(function(c){var st=mstate(c);if(st==='no')nNo++;else if(st!=='wait')nOk++});
+  $('filters').innerHTML='<span class="monthtag">'+esc(new Date().toLocaleDateString('en-GB',{month:'long',year:'numeric'}))+'</span>'+
+    '<button class="fbtn" data-act="filter" data-f="all" aria-pressed="'+(filter==='all')+'">All '+customers.length+'</button>'+
+    '<button class="fbtn" data-act="filter" data-f="no" aria-pressed="'+(filter==='no')+'"><span class="dot no"></span>Not paid '+nNo+'</button>'+
+    '<button class="fbtn" data-act="filter" data-f="ok" aria-pressed="'+(filter==='ok')+'"><span class="dot ok"></span>Paid '+nOk+'</button>';
+  var list=customers.filter(function(c){
+    if(filter==='no'&&mstate(c)!=='no')return false;
+    if(filter==='ok'&&(mstate(c)==='no'||mstate(c)==='wait'))return false;
+    return (c.name+' '+c.item+' '+c.itemDetails+' '+c.phone+' '+c.guarantorName+' '+c.guarantorPhone+' '+c.guarantor2Name+' '+c.guarantor2Phone).toLowerCase().indexOf(q)>-1;
+  });
+  $('homeCount').textContent=list.length+(list.length===1?' record':' records');
+  var box=$('homeCards');
+  if(!list.length){
+    var allPaid=customers.length&&filter==='no'&&!q;
+    box.innerHTML='<div class="empty" style="grid-column:1/-1"><b>'+(allPaid?'Nobody is pending':customers.length?'No match found':'No customers yet')+'</b>'+(allPaid?'Every customer has paid this month.':customers.length?'Try a different name or number.':'Add your first customer to start tracking installments.')+'</div>';
+    return;
+  }
+  box.innerHTML=list.map(function(c){
+    var p=paid(c),r=remaining(c),done=total(c)>0&&r<=0,st=mstate(c);
+    return '<button class="ccard mini" data-act="open" data-id="'+esc(c.id)+'">'+avatar(c.name)+
+      '<span class="mname"><span class="dot '+(st==='no'?'no':(st==='wait'?'na':'ok'))+'"></span><span class="mtxt">'+esc(c.name)+'</span></span>'+
+      '<span class="mamt"><small>Paid</small><b>'+money(p)+'</b></span>'+
+      '<span class="mamt rem"><small>Remaining</small><b class="'+(done?'paidup':'')+'">'+(done?'Paid up':money(r))+'</b></span>'+
+    '</button>';
+  }).join('');
+}
+function renderContacts(){
+  var q=$('qCont').value.trim().toLowerCase();
+  var list=customers.filter(function(c){return (c.name+' '+c.phone+' '+c.guarantorName).toLowerCase().indexOf(q)>-1})
+    .sort(function(a,b){var la=letterOf(a.name),lb=letterOf(b.name);if(la==='#'&&lb!=='#')return 1;if(lb==='#'&&la!=='#')return -1;return a.name.localeCompare(b.name,undefined,{sensitivity:'base'})});
+  $('contCount').textContent=customers.length+(customers.length===1?' customer':' customers')+(q?' · '+list.length+' shown':'');
+  var box=$('contList');
+  if(!list.length){box.innerHTML='<div class="empty" style="border:0"><b>'+(customers.length?'No match found':'No customers yet')+'</b>'+(customers.length?'Try a different name or number.':'Tap Add to create the first one.')+'</div>';renderDetail();return}
+  var html='',cur='';
+  list.forEach(function(c){
+    var L=letterOf(c.name);
+    if(L!==cur){cur=L;html+='<div class="letter">'+esc(L)+'</div>'}
+    var r=remaining(c),done=total(c)>0&&r<=0,s=mstate(c);
+    html+='<button class="row" data-act="open" data-id="'+esc(c.id)+'"'+(view==='detail'&&c.id===selectedId?' aria-current="true"':'')+'>'+avatar(c.name)+
+      '<span style="min-width:0"><div class="nm"><span class="dot '+(s==='no'?'no':(s==='wait'?'na':'ok'))+'"></span>'+esc(c.name)+'</div><div class="ph">'+esc(c.phone||'No phone number')+'</div></span>'+
+      '<span class="amt">'+(done?'<span class="chip good">Paid</span>':money(r)+'<small>remaining</small>')+'</span></button>';
+  });
+  box.innerHTML=html;
+  renderDetail();
+}
+function phoneLine(p){
+  if(!p)return '<span class="muted">No phone number</span>';
+  return '<span class="numline"><b>'+esc(p)+'</b><button class="btn ghost small" data-act="copy" data-text="'+esc(p)+'">Copy</button><a href="'+esc(telHref(p))+'">Call</a></span>';
+}
+function guarCard(name,phone,who,label){
+  return '<div class="guarcard"><div class="who">'+avatar(name)+'<div style="min-width:0"><b>'+esc(name)+'</b><span class="muted small">'+label+' for '+esc(who)+'</span></div></div>'+phoneLine(phone)+'</div>';
+}
+function guarSect(c){
+  var h='<div class="sect"><h3>Zimawar (guarantor)</h3>';
+  if(hasGuarantor(c))h+=guarCard(c.guarantorName,c.guarantorPhone,c.name,'Zimawar 1');
+  else h+='<div class="guarcard"><div><b>Not added yet</b><span class="muted small">Every customer needs a zimawar name and phone number.</span></div><button class="btn soft small" data-act="edit" data-id="'+esc(c.id)+'">Add zimawar</button></div>';
+  if(has2(c))h+=guarCard(c.guarantor2Name||'Unnamed',c.guarantor2Phone,c.name,'Zimawar 2');
+  return h+'</div>';
+}
+function renderDetail(){
+  var box=$('detail'),c=find(selectedId);
+  if(!c){box.innerHTML='';return}
+  var t=total(c),p=paid(c),r=remaining(c),pct=t?Math.min(100,p/t*100):0,done=t>0&&r<=0;
+  var left=(c.monthly>0&&r>0)?Math.ceil(r/c.monthly)+(Math.ceil(r/c.monthly)===1?' installment':' installments'):'None';
+  var pays=c.payments.map(function(x,i){return {x:x,i:i}}).sort(function(a,b){return (a.x.date||'').localeCompare(b.x.date||'')||a.i-b.i});
+  var running=t;
+  var rows=pays.map(function(o){var x=o.x;running=Math.max(0,running-x.amount);return '<div class="hrow ledgerrow"><div class="ledgerdate"><b>'+esc(fmtDate(x.date)||'No date')+'</b><div class="muted small">'+esc(x.adv?'Advance':(x.note||'Payment'))+'</div></div><div class="ledgerpaid"><b>'+money(x.amount)+'</b><small>Paid</small></div><div class="ledgerremain"><b>'+money(running)+'</b><small>Balance left</small></div><div class="ledgeractions"><button class="btn ghost small" data-act="editpay" data-id="'+esc(c.id)+'" data-idx="'+o.i+'">Edit</button></div></div>'}).join('');
+  var customerInfo='<section class="sect customer-top"><h3>Customer information</h3><div class="contactcard"><div class="contactmain"><div class="contactidentity"><b>Customer phone</b><div>'+phoneLine(c.phone)+'</div></div></div>'+
+    '<div class="contactextras">'+(c.item?'<div><small>Item</small><b>'+esc(c.item)+(c.itemDetails?' · '+esc(c.itemDetails):'')+'</b></div>':'')+
+    (hasGuarantor(c)?'<div><small>Zimawar 1</small><b>'+esc(c.guarantorName)+'</b>'+phoneLine(c.guarantorPhone)+'</div>':'<div><small>Zimawar 1</small><b>Not added</b></div>')+
+    (has2(c)?'<div><small>Zimawar 2</small><b>'+esc(c.guarantor2Name||'')+'</b>'+phoneLine(c.guarantor2Phone)+'</div>':'')+'</div></div></section>';
+  box.innerHTML=
+    '<button class="backbtn" data-act="back"><svg width="18" height="18"><use href="#i-back"/></svg>Customers</button>'+ 
+    '<article class="detail">'+
+      '<div class="dhead">'+avatar(c.name,'lg')+'<div style="min-width:0"><h2>'+esc(c.name)+'</h2><div class="sub">'+(done?'<span class="chip good">Paid up</span>':'<span class="chip gold">Active</span>')+(hasGuarantor(c)?'':'<span class="chip warn">Zimawar missing</span>')+statusHtml(c)+'</div></div><button class="btn ghost small detailEdit" data-act="edit" data-id="'+esc(c.id)+'">Edit</button></div>'+ 
+      '<div class="dbody">'+customerInfo+
+        '<section class="sect"><h3>Account summary</h3><div class="facts auto">'+
+          '<div class="fact"><small>Original amount</small><b>'+money(c.original)+'</b></div>'+ 
+          '<div class="fact"><small>Profit ('+esc(String(c.profitRate))+'%)</small><b>'+money(c.original*rateOf(c))+'</b></div>'+ 
+          '<div class="fact"><small>Total payable</small><b>'+money(t)+'</b></div>'+ 
+          '<div class="fact"><small>Received</small><b>'+money(p)+'</b></div>'+ 
+          (advOf(c)>0?'<div class="fact"><small>Advance</small><b>'+money(advOf(c))+'</b></div>':'')+
+          '<div class="fact balancefact"><small>Remaining balance</small><b>'+money(r)+'</b></div>'+ 
+          '<div class="fact"><small>Monthly installment</small><b>'+money(c.monthly)+'</b></div>'+ 
+          '<div class="fact"><small>Installments left</small><b>'+left+'</b></div>'+ 
+          '<div class="fact"><small>Installments start</small><b>'+esc(keyMonthYear(nextKey(startKey(c))))+'</b></div>'+ 
+        '</div><div class="progress accountprogress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct.toFixed(0)+'"><div class="bar" style="width:'+pct+'%"></div></div><p class="muted small">'+pct.toFixed(0)+'% paid</p></section>'+ 
+        '<section class="sect"><div class="ledgerhead"><div><h3>Payment history</h3><p class="muted small">'+c.payments.length+' payment'+(c.payments.length===1?'':'s')+' · oldest to newest</p></div><button class="btn ghost small" data-act="pay" data-id="'+esc(c.id)+'">+ Add payment</button></div>'+(rows?'<div class="history">'+rows+'</div>':'<div class="empty">No payments yet. Add the first payment when received.</div>')+'</section>'+ 
+        '<div class="dactions">'+quickBtn(c)+'<button class="btn soft" data-act="pdf" data-id="'+esc(c.id)+'">PDF statement</button><button class="btn danger" data-act="del" data-id="'+esc(c.id)+'">Delete customer</button></div>'+ 
+      '</div></article>';
+}
+function renderAll(){renderStats();renderHome();renderContacts();renderBackupBar()}
+
+/* ---------- customer form ---------- */
+function updateCalc(){
+  var v=Number($('original').value)||0,rate=Math.max(0,Number($('profitRate').value)||0),t=Math.round(v*(1+rate/100)),a=Number($('advance').value)||0,sd=$('startDate').value;
+  $('calcBox').innerHTML=rate+'% profit: <strong>'+money(v*rate/100)+'</strong><br>Total payable: <strong>'+money(t)+'</strong>'+
+    (a>0?'<br>Advance: <strong>'+money(a)+'</strong><br>Remaining after advance: <strong>'+money(Math.max(0,t-a))+'</strong>':'')+
+    (/^\d{4}-\d{2}-\d{2}$/.test(sd)?'<br>First installment: <strong>'+esc(keyMonthYear(nextKey(sd.slice(0,7))))+'</strong>':'');
+}
+function openAdd(){
+  $('customerForm').reset();$('editId').value='';$('customerTitle').textContent='Add customer';$('startDate').value=stamp();$('profitRate').value='35';updateCalc();openModal('customerModal','name');
+}
+function openEdit(id){
+  var c=find(id);if(!c)return;
+  $('editId').value=id;$('name').value=c.name;$('phone').value=c.phone;$('item').value=c.item;$('itemDetails').value=c.itemDetails;$('original').value=c.original||'';$('profitRate').value=String(c.profitRate==null?35:c.profitRate);$('monthly').value=c.monthly||'';$('advance').value=advOf(c)||'';$('startDate').value=startDateOf(c);
+  $('gname').value=c.guarantorName;$('gphone').value=c.guarantorPhone;$('gname2').value=c.guarantor2Name;$('gphone2').value=c.guarantor2Phone;
+  $('customerTitle').textContent='Edit customer';updateCalc();openModal('customerModal',hasGuarantor(c)?'name':'gname');
+}
+var PHONE_RE=/^[0-9+\-\s()]{7,20}$/;
+function saveCustomer(e){
+  e.preventDefault();
+  var id=$('editId').value;
+  var obj={name:$('name').value.trim(),phone:$('phone').value.trim(),item:$('item').value.trim(),itemDetails:$('itemDetails').value.trim(),original:Number($('original').value),profitRate:Number($('profitRate').value),monthly:Number($('monthly').value)||0,guarantorName:$('gname').value.trim(),guarantorPhone:$('gphone').value.trim(),guarantor2Name:$('gname2').value.trim(),guarantor2Phone:$('gphone2').value.trim()};
+  if(!obj.name){toast('Enter the customer name');$('name').focus();return}
+  if(obj.phone&&!PHONE_RE.test(obj.phone)){toast('Customer phone number looks wrong');$('phone').focus();return}
+  if(!(obj.original>0)){toast('Enter the original amount');$('original').focus();return}
+  if(!Number.isFinite(obj.profitRate)||obj.profitRate<0||obj.profitRate>500){toast('Profit must be between 0 and 500%');$('profitRate').focus();return}
+  if(!obj.guarantorName){toast('Zimawar name is required');$('gname').focus();return}
+  if(!PHONE_RE.test(obj.guarantorPhone)){toast('Enter a valid zimawar phone number');$('gphone').focus();return}
+  if(obj.guarantor2Name||obj.guarantor2Phone){
+    if(!obj.guarantor2Name){toast('Enter the second zimawar name');$('gname2').focus();return}
+    if(!PHONE_RE.test(obj.guarantor2Phone)){toast('Enter a valid second zimawar phone number');$('gphone2').focus();return}
+  }
+  var adv=Number($('advance').value)||0,start=$('startDate').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(start)){toast('Choose the purchase date');$('startDate').focus();return}
+  if(adv<0){toast('Advance cannot be negative');$('advance').focus();return}
+  var ex=id?find(id):null;if(id&&!ex)return;
+  var others=ex?ex.payments.filter(function(p){return !p.adv}):[];
+  var othersSum=others.reduce(function(s,p){return s+p.amount},0);
+  if(adv+othersSum>Math.round(obj.original*(1+obj.profitRate/100))){toast('Advance is more than the total payable');$('advance').focus();return}
+  obj.start=start;
+  var advPay=adv>0?[{amount:adv,date:start,note:'Advance',adv:true}]:[];
+  var c;
+  if(id){c=ex;Object.assign(c,obj);c.payments=advPay.concat(others)}
+  else{c=Object.assign({id:String(Date.now()),payments:advPay},obj);customers.unshift(c)}
+  persist();closeModal('customerModal');toast(id?'Customer updated':'Customer added');
+}
+
+/* ---------- payments ---------- */
+function openPay(id){
+  var c=find(id);if(!c)return;
+  var r=remaining(c);
+  if(r<=0){toast('This customer has no remaining balance');return}
+  $('paymentId').value=id;$('paymentIdx').value='';$('payTitle').textContent='Record payment';$('payDel').hidden=true;$('paymentCustomer').value=c.name;
+  $('paymentAmount').value=c.monthly>0?Math.min(c.monthly,r):'';$('paymentAmount').max=r;
+  var d=new Date();$('paymentDate').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  $('paymentNote').value='';$('paymentCalc').textContent='Current remaining: '+money(r);
+  openModal('paymentModal','paymentAmount');
+}
+function savePayment(e){
+  e.preventDefault();
+  var c=find($('paymentId').value),amount=Number($('paymentAmount').value);
+  if(!c)return;
+  if(!(amount>0)){toast('Enter the amount received');return}
+  var idx=$('paymentIdx').value,old=idx!==''?c.payments[Number(idx)]:null,dt=$('paymentDate').value;
+  if(idx!==''&&!old)return;
+  if(amount>remaining(c)+(old?old.amount:0)){toast('Payment is more than the remaining balance');return}
+  if(!dt){toast('Choose the payment date');return}
+  if(old){old.amount=amount;old.date=dt;old.note=$('paymentNote').value.trim()}
+  else c.payments.push({amount:amount,date:dt,note:$('paymentNote').value.trim(),adv:false});
+  persist();closeModal('paymentModal');toast(old?'Payment updated':'Payment saved');
+}
+
+/* ---------- item, quick pay, edit payment ---------- */
+function itemLine(c){
+  if(!c.item&&!c.itemDetails)return '';
+  return '<div class="guarline"><span>Item</span><b>'+esc(c.item||'-')+'</b>'+(c.itemDetails?'<span>'+esc(c.itemDetails)+'</span>':'')+'</div>';
+}
+function itemSect(c){
+  if(!c.item&&!c.itemDetails)return '';
+  return '<div class="sect"><h3>Item details</h3><div class="guarcard"><div style="min-width:0"><b>'+esc(c.item||'-')+'</b>'+(c.itemDetails?'<span class="muted small">'+esc(c.itemDetails)+'</span>':'')+'</div></div></div>';
+}
+function quickBtn(c){
+  var r=remaining(c);if(!(c.monthly>0)||r<=0)return '';
+  return '<button class="btn primary" style="flex:1 1 100%" data-act="quick" data-id="'+esc(c.id)+'">Pay '+money(Math.min(c.monthly,r))+' · '+esc(keyMonthName(nowKey()))+' installment</button>';
+}
+function quickPay(id){
+  var c=find(id);if(!c)return;
+  var r=remaining(c);
+  if(r<=0){toast('This customer has no remaining balance');return}
+  if(!(c.monthly>0)){toast('Set the monthly installment first (Edit)');return}
+  var amt=Math.min(c.monthly,r),mn=keyMonthYear(nowKey()),st=mstate(c);
+  function doIt(){c.payments.push({amount:amt,date:stamp(),note:'Installment '+mn,adv:false});persist();toast(money(amt)+' recorded for '+mn)}
+  if(st==='ok')askConfirm('Already paid this month','A payment for '+mn+' is already recorded. Add another '+money(amt)+'?','Add again').then(function(ok){if(ok)doIt()});
+  else if(st==='wait')askConfirm('Installments start next month',c.name+' bought this month, so the first installment is due in '+keyMonthYear(nextKey(startKey(c)))+'. Record '+money(amt)+' now anyway?','Record now').then(function(ok){if(ok)doIt()});
+  else doIt();
+}
+function openEditPay(id,idx){
+  var c=find(id),x=c&&c.payments[Number(idx)];if(!x)return;
+  $('paymentId').value=id;$('paymentIdx').value=idx;$('payTitle').textContent='Edit payment';$('payDel').hidden=false;
+  $('paymentCustomer').value=c.name;$('paymentAmount').value=x.amount;$('paymentAmount').max=remaining(c)+x.amount;
+  $('paymentDate').value=x.date||stamp();$('paymentNote').value=x.note||'';
+  $('paymentCalc').textContent='Most you can enter: '+money(remaining(c)+x.amount);
+  openModal('paymentModal','paymentAmount');
+}
+function deletePay(){
+  var c=find($('paymentId').value),idx=Number($('paymentIdx').value),x=c&&c.payments[idx];if(!x)return;
+  askConfirm('Delete this payment?',money(x.amount)+' on '+(fmtDate(x.date)||'no date')+' will be removed from '+c.name+'.','Delete payment',true).then(function(ok){
+    if(!ok)return;c.payments.splice(idx,1);persist();closeModal('paymentModal');toast('Payment deleted');
+  });
+}
+
+/* ---------- backup / import ---------- */
+function stamp(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+async function exportData(){
+  var data=JSON.stringify({app:'hm-book',type:'full-backup',version:2,exported:new Date().toISOString(),profile:user?{name:user.name,owner:user.owner,phone:user.phone||''}:null,customers:customers},null,2),name='hm-book-full-backup-'+stamp()+'.json';
+  try{
+    if(window.AndroidBridge&&window.AndroidBridge.saveFile){window.AndroidBridge.saveFile(name,data);markBackup();return}
+    if(window.claude&&window.claude.use){
+      var dl=await window.claude.use('downloads');
+      if(dl){await dl.save({filename:name,data:data});markBackup();toast('Backup ready');return}
+    }
+  }catch(err){if(err&&err.code==='declined')return}
+  try{
+    var blob=new Blob([data],{type:'application/json'}),a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href)},4000);markBackup();toast('Backup downloaded');
+  }catch(err2){toast('Backup is not available here')}
+}
+function importData(e){
+  var f=e.target.files&&e.target.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){
+    var d;
+    var when='';
+    try{d=JSON.parse(r.result);if(d&&!Array.isArray(d)&&Array.isArray(d.customers)){when=d.exported?fmtDate(String(d.exported).slice(0,10)):'';d=d.customers}if(!Array.isArray(d))throw 0}catch(x){toast('This is not a valid backup file');return}
+    var list=d.map(normalize).filter(Boolean);
+    askConfirm('Restore Full Backup?','This replaces the current list with '+list.length+(list.length===1?' customer':' customers')+' (all payments, zimawar and item details)'+(when?' from the backup of '+when:' from the file')+'.','Replace list',true).then(function(ok){
+      if(!ok)return;customers=list;selectedId=null;persist();go('home');toast('Backup imported');
+    });
+  };
+  r.readAsText(f);e.target.value='';
+}
+
+
+/* ---------- PDF statement ---------- */
+function dayName(s){var d=new Date(s+'T00:00:00');return isNaN(d)?'':d.toLocaleDateString('en-GB',{weekday:'long'})}
+function bi(ur,en){return en}
+function printStatement(id){
+  var c=find(id);if(!c)return;
+  var t=total(c),p=paid(c),r=remaining(c),done=t>0&&r<=0,bal=t,sd=startDateOf(c);
+  var pays=c.payments.map(function(x,i){return {x:x,i:i}}).sort(function(a,b){return (a.x.date||'').localeCompare(b.x.date||'')||a.i-b.i}).map(function(o){return o.x});
+  var rows='<tr class="open"><td>'+esc(fmtDate(sd))+'</td><td>'+esc(dayName(sd))+'</td><td>'+bi('کل رقم','Total = item '+money(c.original)+' + '+c.profitRate+'% margin '+money(c.original*rateOf(c)))+'</td><td class="n"></td><td class="n">'+money(t)+'</td></tr>';
+  pays.forEach(function(x){
+    bal-=x.amount;
+    rows+='<tr><td>'+esc(fmtDate(x.date)||'-')+'</td><td>'+esc(dayName(x.date))+'</td><td>'+(x.adv?'Advance':esc(x.note||'Installment'))+'</td><td class="n">'+money(x.amount)+'</td><td class="n">'+money(Math.max(0,bal))+'</td></tr>';
+  });
+  rows+='<tr class="end"><td colspan="3">'+bi('کل جمع / بقایا','Total received / Remaining')+'</td><td class="n">'+money(p)+'</td><td class="n">'+money(r)+'</td></tr>';
+  var left=(c.monthly>0&&r>0)?Math.ceil(r/c.monthly):0;
+  var g='<div><span>'+bi('ضامن 1','Zimawar 1')+'</span><b>'+(hasGuarantor(c)?esc(c.guarantorName)+'<br>'+esc(c.guarantorPhone):'-')+'</b></div>'+(has2(c)?'<div><span>'+bi('ضامن 2','Zimawar 2')+'</span><b>'+esc(c.guarantor2Name||'-')+'<br>'+esc(c.guarantor2Phone)+'</b></div>':'');
+  $('printSheet').innerHTML='<div class="ps">'+
+    '<div class="ps-head"><div class="ps-brand"><span class="ps-mark">'+esc(initials(brandName()))+'</span><div><h1>'+esc(brandName())+'</h1><p>'+bi('کھاتہ','Account statement')+'</p></div></div><div class="ps-date">'+bi('تاریخ','Date')+'<br><b>'+esc(fmtDate(stamp()))+'</b><br>'+esc(dayName(stamp()))+'</div></div>'+
+    '<div class="ps-grid"><div class="ps-box"><h4>'+bi('گاہک','Customer')+'</h4><div><span>'+bi('نام','Name')+'</span><b>'+esc(c.name)+'</b></div><div><span>'+bi('فون','Phone')+'</span><b>'+esc(c.phone||'-')+'</b></div>'+(c.item?'<div><span>Item</span><b>'+esc(c.item)+'</b></div>':'')+(c.itemDetails?'<div><span>Details</span><b>'+esc(c.itemDetails)+'</b></div>':'')+'<div><span>'+bi('خریداری','Purchase')+'</span><b>'+esc(fmtDate(sd))+' ('+esc(dayName(sd))+')</b></div><div><span>'+bi('','Installments start')+'</span><b>'+esc(keyMonthYear(nextKey(startKey(c))))+'</b></div></div>'+
+    '<div class="ps-box"><h4>'+bi('ضامن','Zimawar')+'</h4>'+g+'</div></div>'+
+    '<div class="ps-sum"><div><small>'+bi('کل رقم','Total payable')+'</small><b>'+money(t)+'</b></div><div><small>'+bi('ایڈوانس','Advance')+'</small><b>'+money(advOf(c))+'</b></div><div><small>'+bi('کل جمع','Total received')+'</small><b>'+money(p)+'</b></div><div class="rem"><small>'+bi('بقایا','Remaining')+'</small><b>'+money(r)+'</b></div></div>'+
+    '<h3>'+bi('ادائیگی کا ریکارڈ','Payment record')+'</h3><table><thead><tr><th>'+bi('تاریخ','Date')+'</th><th>'+bi('دن','Day')+'</th><th>'+bi('تفصیل','Detail')+'</th><th class="n">'+bi('جمع','Received')+'</th><th class="n">'+bi('بقایا','Remaining')+'</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<p class="ps-note">'+bi('','Monthly installment')+': <b>'+money(c.monthly)+'</b>'+(left?' &nbsp;·&nbsp; '+bi('','Installments left')+': <b>'+left+'</b>':'')+(done?' &nbsp;&nbsp; <span class="ps-paid">FULLY PAID</span>':'')+'</p>'+
+    '<div class="ps-foot"><div>'+bi('گاہک کے دستخط','Customer signature')+'</div><div>'+esc(brandName())+'</div></div></div>';
+  var old=document.title;document.title=brandName()+' - '+c.name+' - '+stamp();
+  var restore=function(){document.title=old;window.removeEventListener('afterprint',restore)};
+  window.addEventListener('afterprint',restore);
+  setTimeout(function(){window.print()},80);
+}
+
+/* ---------- monthly backup reminder ---------- */
+function LBK(){return 'hmBookLastBackup:'+uid}
+function ASKK(){return 'hmBookBackupAsk:'+uid}
+function lsGet(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function markBackup(){lsSet(LBK(),stamp());renderBackupBar()}
+function daysSince(d){var a=new Date(d+'T00:00:00'),b=new Date(stamp()+'T00:00:00');return Math.round((b-a)/864e5)}
+function backupDue(){var l=lsGet(LBK());return customers.length>0&&l.slice(0,7)!==nowKey()}
+function renderBackupBar(){
+  var box=$('backupBar');if(!box)return;
+  var l=lsGet(LBK()),due=backupDue();
+  var txt=!l?'No backup taken yet':(daysSince(l)<=0?'Last backup: today':'Last backup: '+daysSince(l)+(daysSince(l)===1?' day ago':' days ago'));
+  box.innerHTML='<div class="bbar'+(due?' due':'')+'"><div><b>'+(due?'Monthly backup due':'Full Backup')+'</b><span>'+txt+'</span></div><button class="btn small '+(due?'primary':'ghost')+'" data-act="backup">Full Backup</button></div>';
+}
+function backupAsk(){
+  if(!backupDue()||lsGet(ASKK())===stamp())return;
+  lsSet(ASKK(),stamp());
+  askConfirm('Monthly backup','Is mahine ka Full Backup abhi nahi liya. Backup lo, file phone ke Downloads folder mein save ho jayegi.','Backup now').then(function(ok){if(ok)exportData()});
+}
+
+/* ---------- preferences, PIN and device biometric ---------- */
+function prefKey(){return 'hmBookPrefs:'+uid}
+function prefs(){try{return JSON.parse(lsGet(prefKey())||'{}')}catch(e){return {}}}
+function savePrefs(v){lsSet(prefKey(),JSON.stringify(v))}
+function applyTheme(t){if(!['dark','light','emerald','blue'].includes(t))t='dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#f2f3f5':(t==='emerald'?'#101b18':(t==='blue'?'#111a29':'#1d2024'));Array.prototype.forEach.call(document.querySelectorAll('.themechoice'),function(b){b.classList.toggle('active',b.getAttribute('data-theme-choice')===t)})}
+function renderSettings(){var q=prefs();applyTheme(q.theme||'dark');$('pinEnabled').checked=!!q.pinHash;$('pinSetup').hidden=!$('pinEnabled').checked;$('pinRemoveRow').hidden=!q.pinHash;$('bioStatus').textContent=q.credential?'Biometric sign-in is set up on this device.':'Not set up.';$('bioSetup').textContent=q.credential?'Re-register':'Set up';$('bioRemoveRow').hidden=!q.credential;$('bioUnlock').hidden=!q.credential;$('unlockBtn').hidden=!q.pinHash}
+function base64url(buf){return btoa(String.fromCharCode.apply(null,new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function fromBase64url(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),function(c){return c.charCodeAt(0)})}
+async function setPin(){var a=$('newPin').value,b=$('confirmPin').value;if(!/^\d{4}$/.test(a)){toast('PIN must be exactly 4 digits');return}if(a!==b){toast('PINs do not match');return}var salt=rndHex(16),hash=await hashPw(a,salt),q=prefs();q.pinSalt=salt;q.pinHash=hash;savePrefs(q);$('newPin').value='';$('confirmPin').value='';renderSettings();toast('PIN lock enabled')}
+async function verifyPin(pin){var q=prefs();if(!q.pinHash)return true;return await hashPw(pin,q.pinSalt)===q.pinHash}
+function showLock(){document.body.setAttribute('data-locked','1');$('lockView').hidden=false;$('unlockPin').value='';$('lockError').textContent='';var q=prefs();$('bioUnlock').hidden=!q.credential;$('unlockBtn').hidden=!q.pinHash;setTimeout(function(){if(q.pinHash)$('unlockPin').focus()},80)}
+function hideLock(){document.body.removeAttribute('data-locked');$('lockView').hidden=true}
+async function unlock(){var pin=$('unlockPin').value;if(!(await verifyPin(pin))){$('lockError').textContent='Incorrect PIN. Try again.';$('unlockPin').value='';return}hideLock()}
+async function setupBiometric(){if(!window.isSecureContext||!navigator.credentials||!window.PublicKeyCredential){toast('Biometric setup needs HTTPS and a supported browser');return}try{var challenge=crypto.getRandomValues(new Uint8Array(32)),uidBytes=new TextEncoder().encode(uid),cred=await navigator.credentials.create({publicKey:{challenge:challenge,rp:{name:'Hm Book',id:location.hostname},user:{id:uidBytes,name:(user&&user.name)||'Hm Book user',displayName:(user&&user.owner)||'Hm Book'},pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'},timeout:60000,attestation:'none'}});if(!cred)throw new Error('No credential returned');var q=prefs();q.credential=base64url(cred.rawId);savePrefs(q);renderSettings();toast('Device biometric set up')}catch(e){toast(e&&e.name==='NotAllowedError'?'Biometric setup was cancelled':'This device could not set up biometric login')}}
+async function biometricLogin(){var q=prefs();if(!q.credential||!navigator.credentials||!window.PublicKeyCredential){toast('Biometric login is not available');return}try{var challenge=crypto.getRandomValues(new Uint8Array(32));var cred=await navigator.credentials.get({publicKey:{challenge:challenge,allowCredentials:[{type:'public-key',id:fromBase64url(q.credential)}],userVerification:'required',timeout:60000}});if(cred)hideLock()}catch(e){$('lockError').textContent='Biometric check was cancelled or not accepted.'}}
+function removePin(){var q=prefs();delete q.pinHash;delete q.pinSalt;savePrefs(q);$('pinEnabled').checked=false;$('pinSetup').hidden=true;renderSettings();toast('PIN removed')}
+function removeBiometric(){var q=prefs();delete q.credential;savePrefs(q);renderSettings();toast('Fingerprint login removed from Hm Book')}
+function togglePin(){var q=prefs();if(!$('pinEnabled').checked){removePin()}else{$('pinSetup').hidden=false;$('newPin').focus()}}
+
+/* ---------- accounts (on this device) ---------- */
+var USERS_KEY='hmBookUsers',SESS_KEY='hmBookSession',LASTU_KEY='hmBookLastUser';
+function getUsers(){try{var u=JSON.parse(localStorage.getItem(USERS_KEY)||'[]');return Array.isArray(u)?u:[]}catch(e){return []}}
+function saveUsers(u){try{localStorage.setItem(USERS_KEY,JSON.stringify(u));return true}catch(e){return false}}
+function brandName(){return (user&&user.name)||'Hm Book'}
+function toHex(a){return Array.prototype.map.call(a,function(b){return ('0'+b.toString(16)).slice(-2)}).join('')}
+function rndHex(n){var a=new Uint8Array(n);if(window.crypto&&crypto.getRandomValues)crypto.getRandomValues(a);else for(var i=0;i<n;i++)a[i]=Math.floor(Math.random()*256);return toHex(a)}
+async function hashPw(pw,salt){
+  try{
+    if(window.crypto&&crypto.subtle){
+      var enc=new TextEncoder(),key=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits']);
+      var bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(salt),iterations:100000,hash:'SHA-256'},key,256);
+      return 'p:'+toHex(new Uint8Array(bits));
+    }
+  }catch(e){}
+  var h=5381,str=salt+pw;
+  for(var r=0;r<3000;r++){for(var i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0}
+  return 'f:'+(h>>>0).toString(16);
+}
+function showAuth(){
+  document.body.setAttribute('data-auth','1');$('authView').hidden=false;
+  var us=getUsers();
+  $('loginUser').innerHTML=us.map(function(u){return '<option value="'+esc(u.id)+'">'+esc(u.name)+' · '+esc(u.owner)+'</option>'}).join('');
+  var last=lsGet(LASTU_KEY);if(last&&us.some(function(u){return u.id===last}))$('loginUser').value=last;
+  authTab(us.length?'login':'signup');
+}
+function authTab(t){
+  var login=t==='login';
+  $('loginForm').hidden=!login;$('signupForm').hidden=login;
+  $('tabLogin').setAttribute('aria-pressed',login);$('tabSignup').setAttribute('aria-pressed',!login);
+  $('tabLogin').hidden=!getUsers().length;
+  $('loginErr').textContent='';$('signupErr').textContent='';
+}
+function startSession(u,fromBoot){
+  user=u;uid=u.id;KEY=LEGACY+':u:'+uid;customers=load();selectedId=null;filter='all';
+  var launchLock=false;try{var rk='hmBookRuntime:'+uid;if(fromBoot&&!sessionStorage.getItem(rk))launchLock=true;sessionStorage.setItem(rk,'active')}catch(e){launchLock=!!fromBoot}
+  lsSet(SESS_KEY,uid);lsSet(LASTU_KEY,uid);applyTheme(prefs().theme||'dark');
+  Array.prototype.forEach.call(document.querySelectorAll('.rail .brandname,.topbar .brandname'),function(el){el.textContent=u.name});
+  $('authView').hidden=true;document.body.removeAttribute('data-auth');
+  location.hash='';renderAll();route();renderSettings();if(launchLock&&(prefs().pinHash||prefs().credential))showLock();backupAsk();
+}
+function endSession(){
+  try{localStorage.removeItem(SESS_KEY);if(uid)sessionStorage.removeItem('hmBookRuntime:'+uid)}catch(e){}
+  ['customerModal','paymentModal','confirmModal'].forEach(function(id){$(id).classList.remove('show')});
+  confirmResolve=null;user=null;uid='';KEY='';customers=[];selectedId=null;
+  ['detail','printSheet','homeCards','contList'].forEach(function(id){$(id).innerHTML=''});
+  ['qHome','qCont','loginPw','suPw','suPw2'].forEach(function(id){$(id).value=''});
+  Array.prototype.forEach.call(document.querySelectorAll('.rail .brandname,.topbar .brandname'),function(el){el.textContent='Hm Book'});
+  location.hash='';showAuth();
+}
+function logout(){
+  askConfirm('Log out?','Aap ka hisaab phone mein safe rehta hai. Dobara log in karne par wapas mil jayega.','Log out').then(function(ok){if(ok)endSession()});
+}
+async function doLogin(e){
+  e.preventDefault();
+  var u=getUsers().filter(function(x){return x.id===$('loginUser').value})[0],pw=$('loginPw').value;
+  if(!u){$('loginErr').textContent='Choose an account';return}
+  if(!pw){$('loginErr').textContent='Enter your password';return}
+  var h=await hashPw(pw,u.salt);
+  if(h!==u.hash){$('loginErr').textContent='Wrong password';return}
+  $('loginPw').value='';startSession(u);
+}
+async function doSignup(e){
+  e.preventDefault();
+  var biz=$('suBiz').value.trim(),owner=$('suOwner').value.trim(),ph=$('suPhone').value.trim(),pw=$('suPw').value,pw2=$('suPw2').value,err=$('signupErr');
+  if(!biz){err.textContent='Enter the business name';return}
+  if(!owner){err.textContent='Enter your name';return}
+  if(ph&&!PHONE_RE.test(ph)){err.textContent='Phone number looks wrong';return}
+  if(pw.length<4){err.textContent='Password must be at least 4 characters';return}
+  if(pw!==pw2){err.textContent='Passwords do not match';return}
+  var us=getUsers();
+  if(us.some(function(x){return x.name.toLowerCase()===biz.toLowerCase()})){err.textContent='An account with this business name already exists';return}
+  var salt=rndHex(16),u={id:Date.now().toString(36)+rndHex(3),name:biz,owner:owner,phone:ph,salt:salt,hash:await hashPw(pw,salt),created:stamp()};
+  var first=us.length===0;
+  us.push(u);
+  if(!saveUsers(us)){err.textContent='Could not save the account on this device';return}
+  if(first){
+    try{
+      var old=localStorage.getItem(LEGACY);
+      if(old)localStorage.setItem(LEGACY+':u:'+u.id,old);
+      var ob=localStorage.getItem('hmBookLastBackup');if(ob)localStorage.setItem('hmBookLastBackup:'+u.id,ob);
+    }catch(x){}
+  }
+  ['suBiz','suOwner','suPhone','suPw','suPw2'].forEach(function(id){$(id).value=''});
+  startSession(u);toast(first?'Account created':'Welcome, '+owner);
+}
+function boot(){
+  var sid=lsGet(SESS_KEY),u=getUsers().filter(function(x){return x.id===sid})[0];
+  if(u)startSession(u,true);else showAuth();
+}
+
+/* ---------- copy / install ---------- */
+function fallbackCopy(t){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Copied')}catch(e){toast(t)}ta.remove()}
+function copyText(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast('Copied')},function(){fallbackCopy(t)})}else fallbackCopy(t)}
+function showInstall(on){Array.prototype.forEach.call(document.querySelectorAll('.installBtn'),function(b){b.hidden=!on})}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;showInstall(true)});
+window.addEventListener('appinstalled',function(){deferredPrompt=null;showInstall(false);toast('Hm Book installed')});
+function install(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null;showInstall(false)})}
+
+/* ---------- events ---------- */
+document.addEventListener('click',function(e){
+  var el=e.target.closest('[data-act]');if(!el)return;
+  var act=el.getAttribute('data-act'),id=el.getAttribute('data-id');
+  if(act==='nav')go(el.getAttribute('data-view'));
+  else if(act==='theme'){var q=prefs();q.theme=el.getAttribute('data-theme-choice');savePrefs(q);applyTheme(q.theme)}
+  else if(act==='savepin')setPin();
+  else if(act==='removepin')removePin();
+  else if(act==='removebio')removeBiometric();
+  else if(act==='biometric')setupBiometric();
+  else if(act==='unlock')unlock();
+  else if(act==='biounlock')biometricLogin();
+  else if(act==='add')openAdd();
+  else if(act==='backup')exportData();
+  else if(act==='import')$('importFile').click();
+  else if(act==='open'){if(find(id)){selectedId=id;go('detail')}}
+  else if(act==='filter'){filter=el.getAttribute('data-f');renderHome()}
+  else if(act==='back')go('customers');
+  else if(act==='pay')openPay(id);
+  else if(act==='edit')openEdit(id);
+  else if(act==='pdf')printStatement(id);
+  else if(act==='quick')quickPay(id);
+  else if(act==='authtab')authTab(el.getAttribute('data-t'));
+  else if(act==='logout')logout();
+  else if(act==='editpay')openEditPay(id,el.getAttribute('data-idx'));
+  else if(act==='delpay')deletePay();
+  else if(act==='copy')copyText(el.getAttribute('data-text'));
+  else if(act==='install')install();
+  else if(act==='closeModal')closeModal(el.getAttribute('data-modal'));
+  else if(act==='confirmOk'){var r=confirmResolve;confirmResolve=null;closeModal('confirmModal');if(r)r(true)}
+  else if(act==='del'){
+    var c=find(id);if(!c)return;
+    askConfirm('Delete '+c.name+'?','This removes the customer and all '+c.payments.length+' recorded payments. Take a Backup first if you may need them.','Delete customer',true).then(function(ok){
+      if(!ok)return;customers=customers.filter(function(x){return x.id!==id});selectedId=null;persist();go('customers');toast('Customer deleted');
+    });
+  }
+});
+$('customerForm').addEventListener('submit',saveCustomer);
+$('pinEnabled').addEventListener('change',togglePin);$('unlockPin').addEventListener('keydown',function(e){if(e.key==='Enter')unlock()});
+$('loginForm').addEventListener('submit',doLogin);
+$('signupForm').addEventListener('submit',doSignup);
+$('paymentForm').addEventListener('submit',savePayment);
+$('original').addEventListener('input',updateCalc);$('profitRate').addEventListener('input',updateCalc);$('advance').addEventListener('input',updateCalc);$('startDate').addEventListener('input',updateCalc);
+$('importFile').addEventListener('change',importData);
+$('qHome').addEventListener('input',renderHome);
+$('qCont').addEventListener('input',renderContacts);
+
+if(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)showInstall(false);
+boot();
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){})})}
+})();
+</script>
+
+</body>
+</html>
